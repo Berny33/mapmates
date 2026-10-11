@@ -34,11 +34,11 @@ flowchart LR
     M --> UC10(UC-10 View proposals feed)
     M --> UC11(UC-11 View itinerary and map)
     M --> UC12(UC-12 Export itinerary)
+    M --> UC16(UC-16 Remove proposal)
 
     O --> UC13(UC-13 Edit or delete trip)
     O --> UC14(UC-14 Manage invitation link)
-    O --> UC15(UC-15 Close voting and resolve tie)
-    O --> UC16(UC-16 Schedule activity)
+    O --> UC15(UC-15 Close voting early and resolve tie)
 
     UC08 -.->|uses| G
 ```
@@ -54,15 +54,15 @@ flowchart LR
 | UC-05 List my trips | FR-04 |
 | UC-06 Join trip via invitation link | FR-07, FR-08, BR-07, BR-08 |
 | UC-07 Leave trip | FR-07 |
-| UC-08 Create proposal | FR-09, FR-19, NFR-06 |
+| UC-08 Create proposal | FR-09, FR-13, FR-23, BR-06, BR-09, BR-10, NFR-06 |
 | UC-09 Vote on proposal | FR-10, BR-02, BR-03 |
 | UC-10 View proposals feed | FR-16 |
-| UC-11 View itinerary and map | FR-17, FR-18 |
+| UC-11 View itinerary and map | FR-14, FR-17, FR-18 |
 | UC-12 Export itinerary | FR-20, FR-21 |
 | UC-13 Edit or delete trip | FR-05, FR-15 |
 | UC-14 Manage invitation link | FR-06, BR-07 |
-| UC-15 Close voting and resolve tie | FR-11, FR-12, BR-04 |
-| UC-16 Schedule activity | FR-14, BR-05, BR-06 |
+| UC-15 Close voting early and resolve tie | FR-11, FR-12, FR-14, BR-04, BR-11 |
+| UC-16 Remove proposal | FR-19 |
 
 ## 4. Detailed use cases
 
@@ -116,8 +116,8 @@ flowchart LR
 | UC-04 | Create trip | User | The user creates a trip (name, destination, dates, type). The creator becomes organizer. | 400 invalid data (e.g. end date before start date), 401 |
 | UC-05 | List my trips | User | The user sees the trips they own or participate in. | 401 |
 | UC-07 | Leave trip | Member | A member leaves a trip. The organizer cannot leave without deleting the trip. | 401, 403, 404 |
-| UC-08 | Create proposal | Member | The member searches a place, chooses a category and a voting duration, and creates the proposal. | 400, 401, 403, 502 geocoding service unavailable |
 | UC-10 | View proposals feed | Member | The member sees proposals with category, place, remaining time and votes. | 401, 403, 404 |
 | UC-11 | View itinerary and map | Member | The member sees the itinerary by day and the places on the map. | 401, 403, 404 |
 | UC-12 | Export itinerary | Member | The member downloads the itinerary as an `.ics` file. | 401, 403, 404 |
 | UC-14 | Manage invitation link | Organizer | The organizer generates, regenerates or revokes the invitation link. | 401, 403, 404 |
+| UC-16 | Remove proposal | Member / Organizer | The author of a proposal or the organizer removes it. | 401, 403, 404 |
