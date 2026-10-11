@@ -54,15 +54,15 @@ flowchart LR
 | UC-05 List my trips | FR-04 |
 | UC-06 Join trip via invitation link | FR-07, FR-08, BR-07, BR-08 |
 | UC-07 Leave trip | FR-07 |
-| UC-08 Create proposal | FR-09, FR-13, FR-23, BR-06, BR-09, BR-10, NFR-06 |
+| UC-08 Create proposal | FR-09, FR-13, FR-23, BR-06, BR-09, BR-10, BR-14, BR-15, NFR-06 |
 | UC-09 Vote on proposal | FR-10, BR-02, BR-03 |
 | UC-10 View proposals feed | FR-16 |
 | UC-11 View itinerary and map | FR-14, FR-17, FR-18 |
 | UC-12 Export itinerary | FR-20, FR-21 |
-| UC-13 Edit or delete trip | FR-05, FR-15 |
+| UC-13 Edit or delete trip | FR-05, FR-15, BR-06, BR-13 |
 | UC-14 Manage invitation link | FR-06, BR-07 |
 | UC-15 Close voting early and resolve tie | FR-11, FR-12, FR-14, BR-04, BR-11 |
-| UC-16 Remove proposal | FR-19 |
+| UC-16 Remove proposal | FR-19, BR-12 |
 
 ## 4. Detailed use cases
 
@@ -90,7 +90,7 @@ flowchart LR
 | Alternative flows | A1. Solo trip (FR-13): steps 1 to 5 apply unchanged, including the overlap check. In step 6 the proposal is created directly as `approved`, without voting, and appears in the itinerary. |
 | Exceptions | E1. Not authenticated: 401. E2. User is not a member of the trip: 403. E3. Trip not found: 404. E4. Missing or invalid data (day outside the trip's range, end time not later than start time, note too long, voting duration out of range): 400. E5. Time interval overlaps an approved activity: 409. E6. Geocoding service unavailable: 502; rate limit exceeded: 429 (NFR-06). |
 | Postconditions | A new proposal is created in the trip. If collaborative, voting is open; if solo, it is added to the itinerary. |
-| Related | FR-09, FR-13, FR-23, BR-06, BR-09, BR-10, NFR-06 |
+| Related | FR-09, FR-13, FR-23, BR-06, BR-09, BR-10, BR-14, BR-15, NFR-06 |
 
 ### UC-09: Vote on proposal
 
@@ -145,6 +145,8 @@ flowchart LR
 | UC-11 | View itinerary and map | Member | The member sees the `approved` proposals by day and their places on the map. | 401, 403, 404 |
 | UC-12 | Export itinerary | Member | The member downloads the itinerary as an `.ics` file. | 401, 403, 404 |
 | UC-14 | Manage invitation link | Organizer | The organizer generates, regenerates or revokes the invitation link. | 401, 403, 404 |
+| UC-10 | View proposals feed | Member | The member sees the trip's proposals with category, place, remaining voting time, votes and status. | 401, 403, 404 |
+| UC-11 | View itinerary and map | Member | The member sees the `approved` proposals by day and their places on the map. | 401, 403, 404 |
 | UC-16 | Remove proposal | Member / Organizer | A member removes their own proposal while it is `open`; the organizer can remove any proposal at any time (BR-12). | 401, 403, 404, 409 author tries to remove a non-`open` proposal |
 
 ## 6. Proposal statuses
