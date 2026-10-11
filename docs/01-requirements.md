@@ -37,7 +37,7 @@ Priority: **M** = Must, **S** = Should, **C** = Could.
 | FR-02 | A user can log in and log out. | M |
 | FR-03 | A user can create a trip with name, destination, start date, end date and type (`solo` or `collaborative`). | M |
 | FR-04 | A user can list the trips they own or participate in. | M |
-| FR-05 | The organizer can edit or delete a trip. | M |
+| FR-05 | The organizer can edit a trip's name, destination and dates, or delete the trip. The trip type cannot be changed. | M |
 | FR-06 | The organizer can generate an invitation link/code for a collaborative trip, and can revoke it. | M |
 | FR-07 | A user with a valid invitation link can join the trip; a member can leave the trip. | M |
 | FR-08 | A trip has a maximum number of members (default 15). | S |
@@ -51,7 +51,7 @@ Priority: **M** = Must, **S** = Should, **C** = Could.
 | FR-16 | A member can view the trip's proposals as a feed showing category, place, remaining voting time and current votes. | M |
 | FR-17 | A member can view the itinerary day by day. | M |
 | FR-18 | The itinerary is displayed on an interactive map with one marker per place, filterable by day. | M |
-| FR-19 | The author of a proposal or the organizer can remove a proposal. | S |
+| FR-19 | The author of a proposal can remove it while its voting is open; the organizer can remove any proposal. | S |
 | FR-20 | A member can export the itinerary as an iCalendar (`.ics`) file. | S |
 | FR-21 | A member can export the itinerary as a printable/PDF view. | C |
 | FR-22 | A user can reset a forgotten password by email. | C |
@@ -84,3 +84,7 @@ Priority: **M** = Must, **S** = Should, **C** = Could.
 - BR-09: An activity occupies the interval from its start time to its end time (end exclusive). The end time must be later than the start time and fall on the same day.
 - BR-10: Approved activities of the same trip cannot overlap. Open proposals may overlap each other, since they compete for the same slot.
 - BR-11: If a proposal is approved at closing but overlaps an activity approved earlier, it is rejected due to conflict.
+- BR-12: The author of a proposal can remove it only while its voting is open. The organizer can remove any proposal at any time. Removing a proposal also removes its votes and, if it was approved, its place in the itinerary.
+- BR-13: The trip type (`solo` or `collaborative`) cannot be changed after the trip is created.
+- BR-14: A proposal's note has at most 280 characters.
+- BR-15: A proposal's voting duration is between 1 hour and 3 days.
