@@ -79,6 +79,19 @@ flowchart LR
 | Postconditions | The user is a member of the trip with the role `member`. The trip's member count increased by one. |
 | Related | FR-07, FR-08, BR-07, BR-08 |
 
+### UC-08: Create proposal
+
+| Field | Description |
+| --- | --- |
+| Actor | Member |
+| Preconditions | The user is authenticated and is a member of the trip. |
+| Trigger | The member submits the form to create a new activity proposal. |
+| Main flow | 1. The member searches for a place using the external geocoding service (Nominatim).<br>2. The member selects the place, fills in category, proposed day, start time, end time, and voting duration.<br>3. The system validates that the proposed day falls within the trip's date range (BR-06).<br>4. The system validates that the end time is later than the start time and falls on the same day (BR-09).<br>5. The system verifies the time interval does not overlap with any already approved activity in the itinerary (FR-23, BR-10).<br>6. The system creates the proposal with an 'open' status and records its voting deadline. |
+| Alternative flows | A1. Solo trip (FR-13): If the trip type is `solo`, the proposal bypasses the voting process, is directly marked as 'approved', and is added to the itinerary. |
+| Exceptions | E1. Proposed day is outside the trip's date range: 422 Unprocessable Entity.<br>E2. Invalid time range (end time before start time): 400 Bad Request.<br>E3. Time interval overlaps with an already approved activity: 409 Conflict.<br>E4. External geocoding service unavailable or rate limit exceeded: 503 Service Unavailable / 429 Too Many Requests (NFR-06). |
+| Postconditions | A new proposal is created in the trip. If collaborative, voting is open; if solo, it is added to the itinerary. |
+| Related | FR-09, FR-13, FR-23, BR-06, BR-09, BR-10, NFR-06 |
+
 ### UC-09: Vote on proposal
 
 | Field | Description |
@@ -92,18 +105,6 @@ flowchart LR
 | Postconditions | At most one vote per user exists for the proposal. |
 | Related | FR-10, BR-02, BR-03 |
 
-### UC-16-: Schedule activity
-
-| Field | Description |
-| --- | --- |
-| Actor | Member |
-| Preconditions | The user is authenticated and is a member of the trip. The proposal exists and its voting is open. |
-| Trigger | The member selects "for" or "against" on a proposal. |
-| Main flow | 1. The system checks the user is a member of the trip. 2. The system checks voting is still open. 3. The system records the vote (or replaces the previous one). 4. The system updates and shows the vote count. |
-| Alternative flows | A1. The user already voted the same option: the vote is withdrawn. |
-| Exceptions | E1. Not authenticated: 401. E2. Not a member of the trip: 403. E3. Voting closed: 409 (or 422). E4. Proposal not found: 404. |
-| Postconditions | At most one vote per user exists for the proposal. |
-| Related | FR-10, BR-02, BR-03 |
 
 
 ## 5. Summary of the remaining use cases
