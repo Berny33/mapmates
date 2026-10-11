@@ -118,6 +118,19 @@ flowchart LR
 | Postconditions | The trip details are updated and invalid proposals are removed, OR the trip and all its data are entirely removed from the system. |
 | Related | FR-05, FR-15 |
 
+### UC-15: Close voting early and resolve tie
+
+| Field | Description |
+| --- | --- |
+| Actor | Organizer |
+| Preconditions | The user is authenticated and is the organizer of the trip. The proposal status is 'open'. |
+| Trigger | The organizer clicks the option to close voting for a specific proposal before its deadline. |
+| Main flow | 1. The system verifies the user is the organizer. 2. The system tallies the current "for" and "against" votes. 3. The "for" votes strictly exceed the "against" votes (BR-04). 4. The system checks if the proposal's time interval overlaps with any other activity that was approved while this proposal was in the open state (BR-11). 5. The system marks the proposal as 'approved' and adds it to the day's itinerary (FR-14). |
+| Alternative flows | A1. Tie resolution (FR-12): The "for" and "against" votes are equal. The system prompts the organizer to manually choose whether to approve or reject the proposal. A2. Rejected: The "against" votes exceed the "for" votes. The system marks the proposal as 'rejected'. A3. Overlap conflict (BR-11): The proposal won the vote, but its time slot was taken by another activity approved earlier. The system marks it as 'rejected' due to conflict and notifies the organizer. |
+| Exceptions | E1. User is not the organizer: 403. E2. Proposal not found: 404. E3. Proposal is already closed: 409. |
+| Postconditions | The proposal status changes to 'approved' or 'rejected'. If approved, it is officially scheduled in the itinerary. |
+| Related | FR-11, FR-12, FR-14, BR-04, BR-11 |
+
 ## 5. Summary of the remaining use cases
 
 | ID | Name | Actor | Description | Main errors |
