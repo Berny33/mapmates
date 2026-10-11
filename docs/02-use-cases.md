@@ -86,9 +86,9 @@ flowchart LR
 | Actor | Member |
 | Preconditions | The user is authenticated and is a member of the trip. |
 | Trigger | The member submits the form to create a new activity proposal. |
-| Main flow | 1. The member searches for a place using the external geocoding service (Nominatim).<br>2. The member selects the place, fills in category, proposed day, start time, end time, and voting duration.<br>3. The system validates that the proposed day falls within the trip's date range (BR-06).<br>4. The system validates that the end time is later than the start time and falls on the same day (BR-09).<br>5. The system verifies the time interval does not overlap with any already approved activity in the itinerary (FR-23, BR-10).<br>6. The system creates the proposal with an 'open' status and records its voting deadline. |
+| Main flow | 1. The member searches for a place using the external geocoding service (Nominatim). 2. The member selects the place, fills in category, proposed day, start time, end time, and voting duration. 3. The system validates that the proposed day falls within the trip's date range (BR-06) 4. The system validates that the end time is later than the start time and falls on the same day (BR-09). 5. The system verifies the time interval does not overlap with any already approved activity in the itinerary (FR-23, BR-10). 6. The system creates the proposal with an 'open' status and records its voting deadline. |
 | Alternative flows | A1. Solo trip (FR-13): If the trip type is `solo`, the proposal bypasses the voting process, is directly marked as 'approved', and is added to the itinerary. |
-| Exceptions | E1. Proposed day is outside the trip's date range: 422 Unprocessable Entity.<br>E2. Invalid time range (end time before start time): 400 Bad Request.<br>E3. Time interval overlaps with an already approved activity: 409 Conflict.<br>E4. External geocoding service unavailable or rate limit exceeded: 503 Service Unavailable / 429 Too Many Requests (NFR-06). |
+| Exceptions | E1. Proposed day is outside the trip's date range: 422 Unprocessable Entity. E2. Invalid time range (end time before start time): 400 Bad Request. E3. Time interval overlaps with an already approved activity: 409 Conflict. E4. External geocoding service unavailable or rate limit exceeded: 503 Service Unavailable / 429 Too Many Requests (NFR-06). |
 | Postconditions | A new proposal is created in the trip. If collaborative, voting is open; if solo, it is added to the itinerary. |
 | Related | FR-09, FR-13, FR-23, BR-06, BR-09, BR-10, NFR-06 |
 
@@ -105,7 +105,18 @@ flowchart LR
 | Postconditions | At most one vote per user exists for the proposal. |
 | Related | FR-10, BR-02, BR-03 |
 
+### UC-13: Edit or delete trip
 
+| Field | Description |
+| --- | --- |
+| Actor | Organizer |
+| Preconditions | The user is authenticated and is the organizer of the trip. |
+| Trigger | The organizer submits the edit trip form or clicks the delete trip button. |
+| Main flow | 1. The organizer updates the trip details (name, destination, dates) and submits. 2. The system detects a change in the start or end dates. 3. The system identifies any existing proposals (open or approved) whose proposed day now falls outside the new date range. 4. The system warns the organizer about the number of proposals that will be deleted and requests confirmation (FR-15). 5. The organizer confirms the action. 6. The system updates the trip dates and deletes the out-of-bounds proposals. |
+| Alternative flows | A1. Delete trip: The organizer chooses to delete the trip. The system permanently deletes the trip and cascades the deletion to all associated members, proposals, and votes (FR-05). A2. No date conflict: The organizer changes dates, but all existing proposals still fall within the new range. The system saves the changes without asking for deletion confirmation. |
+| Exceptions | E1. User is not the organizer: 403 Forbidden. E2. New end date is before the new start date: 400 Bad Request. |
+| Postconditions | The trip details are updated and invalid proposals are removed, OR the trip and all its data are entirely removed from the system. |
+| Related | FR-05, FR-15 |
 
 ## 5. Summary of the remaining use cases
 
