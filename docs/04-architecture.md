@@ -16,13 +16,13 @@ flowchart LR
 | Area | Choice |
 | --- | --- |
 | Frontend | HTML, CSS, JavaScript, Leaflet.js |
-| Backend | Node.js with Express |
+| Backend | Node.js 24 with Express 5, TypeScript (ESM) |
 | Database | PostgreSQL (`pg` driver, parameterized queries) |
 | Authentication | `express-session` with sessions stored in PostgreSQL, httpOnly cookie |
 | Passwords | bcrypt (cost factor 12) |
 | Validation | Zod schemas |
 | HTTP hardening | `helmet`, `express-rate-limit` |
-| Tests | Jest and Supertest (integration), Playwright (E2E) |
+| Tests | Vitest and Supertest (integration), Playwright (E2E) |
 | CI/CD | GitHub Actions (from Sprint 3) |
 
 The stack is preliminary and can be adjusted during development.
@@ -39,13 +39,14 @@ mapmates/
 |   |-- js/                api.js (fetch wrapper), pages and map modules
 |   |-- index.html, login.html, trips.html, trip.html
 |-- src/
-|   |-- server.js          starts the HTTP server
-|   |-- app.js             builds the Express app (no listen), used by tests
+|   |-- server.ts          starts the HTTP server
+|   |-- app.ts             builds the Express app (no listen), used by tests
 |   |-- config/            environment variables and database pool
 |   |-- routes/            one file per resource
 |   |-- middlewares/       auth, membership, validation, errors, rate limits
 |   |-- controllers/       HTTP layer
 |   |-- services/          business rules
+|   |-- adapters/          external services behind interfaces (geocoding)
 |   |-- models/            SQL queries
 |   |-- validators/        Zod schemas
 |   |-- utils/             AppError, token generator, ics builder
@@ -55,10 +56,12 @@ mapmates/
 |-- .env.example
 |-- .gitignore
 |-- package.json
+|-- tsconfig.json
+|-- vitest.config.ts
 |-- README.md
 ```
 
-`app.js` is separate from `server.js` so integration tests can load the app without opening a port.
+`app.ts` is separate from `server.ts` so integration tests can load the app without opening a port.
 
 ## 4. Layers and responsibilities
 
@@ -68,8 +71,11 @@ mapmates/
 | Middlewares | Authentication, trip membership and role checks, input validation, rate limiting, error handling | Access the database for business decisions |
 | Controllers | Read the request, call a service, build the HTTP response and status code | Contain SQL or business rules |
 | Services | Business rules: overlap check, voting window, status transitions, member limit | Know about `req` or `res` |
+| Adapters | Wrap an external service (Nominatim) behind an interface so it can be replaced or faked in tests | Contain business rules |
 | Models | SQL queries with parameters; one module per table | Contain business rules |
 | Validators | Describe the valid shape of each request | Perform authorization |
+
+Services receive their dependencies (models and adapters) as parameters instead of importing them directly. This keeps the business rules testable and lets tests replace the geocoding adapter with a fake one.
 
 ## 5. Request flow
 
@@ -148,7 +154,7 @@ Static pages served by Express. `public/js/api.js` wraps `fetch` and handles 401
 
 ## 10. Testing and CI/CD (planned)
 
-- Integration tests (Jest and Supertest) run against a separate test database and cover success paths, invalid input and access restrictions for each endpoint.
+- Integration tests (Vitest and Supertest) run against a separate test database and cover success paths, invalid input and access restrictions for each endpoint.
 - E2E tests (Playwright) cover the main flows from Sprint 3.
 - Coverage target: at least 90% at final delivery.
 - GitHub Actions runs the tests on every pull request and deploys from `main` (from Sprint 3).
