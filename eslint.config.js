@@ -6,5 +6,13 @@ export default [
   { ignores: ['node_modules/', 'dist/', 'coverage/', 'public/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  { languageOptions: { globals: globals.node } },
+  {
+    languageOptions: { globals: globals.node },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
+    },
+  },
 ];
