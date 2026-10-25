@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/integration/**/*.test.ts'],
+    globalSetup: ['tests/setup/global-setup.ts'],
+    setupFiles: ['tests/setup/env.ts', 'tests/setup/hooks.ts'],
     fileParallelism: false,
     coverage: {
       provider: 'v8',
