@@ -25,4 +25,5 @@ export function loadTestEnv(): void {
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
   process.env.BCRYPT_ROUNDS = '4';
   process.env.SESSION_SECRET = crypto.randomBytes(32).toString('hex');
+  process.env.AUTH_RATE_LIMIT = '1000';
 }
