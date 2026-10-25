@@ -4,6 +4,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { sessionMiddleware } from './config/session.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
+import authRoutes from './routes/auth.routes.js';
 
 const app = express();
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -17,6 +18,7 @@ app.get('/api/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+app.use('/api/auth', authRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
