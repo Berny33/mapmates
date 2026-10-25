@@ -16,8 +16,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "tsx tests/setup/validate-test-env.ts && vitest run",
+    "test:coverage": "tsx tests/setup/validate-test-env.ts && vitest run --coverage",
     "lint": "eslint .",
     "format": "prettier --write .",
     "migrate": "tsx db/migrate-cli.ts"

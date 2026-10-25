@@ -5,7 +5,9 @@ import { runMigrations } from './migrate.js';
 try {
   const applied = await runMigrations(pool);
   console.log(
-    applied.length ? `Applied: ${applied.join(', ')}` : 'Database is up to date',
+    applied.length
+      ? `Applied: ${applied.join(', ')}`
+      : 'Database is up to date',
   );
 } finally {
   await pool.end();
