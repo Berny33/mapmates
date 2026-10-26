@@ -16,20 +16,26 @@ if (!secret) {
 
 const PgSession = connectPgSimple(session);
 
+export const SESSION_COOKIE_NAME = 'mapmates.sid';
+
+export const sessionCookieOptions = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+} as const;
+
 export const sessionMiddleware = session({
   store: new PgSession({
     pool,
     tableName: 'session',
     pruneSessionInterval: process.env.NODE_ENV === 'test' ? false : 60,
   }),
-  name: 'mapmates.sid',
+  name: SESSION_COOKIE_NAME,
   secret,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    ...sessionCookieOptions,
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
 });
