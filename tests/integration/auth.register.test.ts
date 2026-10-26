@@ -139,6 +139,8 @@ describe('auth service', () => {
         create: async () => {
           throw new Error('database is down');
         },
+        findByEmail: async () => undefined,
+        findById: async () => undefined,
       },
     });
 
