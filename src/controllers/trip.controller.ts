@@ -12,5 +12,11 @@ export function createTripController(tripService: TripService) {
 
       res.status(201).json(trip);
     },
+
+    async list(req: Request, res: Response): Promise<void> {
+      const trips = await tripService.listTrips(getAuthenticatedUserId(req));
+
+      res.status(200).json(trips);
+    },
   };
 }

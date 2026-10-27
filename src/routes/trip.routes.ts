@@ -15,4 +15,6 @@ router.use(requireAuth);
 
 router.post('/', validate(createTripSchema), tripController.create);
 
+router.get('/', tripController.list);
+
 export default router;
