@@ -2,6 +2,8 @@ import { pool } from '../config/db.js';
 
 export type TripType = 'solo' | 'collaborative';
 
+export type TripRole = 'organizer' | 'member';
+
 export interface Trip {
   id: string;
   name: string;
@@ -20,6 +22,10 @@ export interface NewTrip {
   endDate: string;
   type: TripType;
   maxMembers: number;
+}
+
+export interface TripWithRole extends Trip {
+  role: TripRole;
 }
 
 // Dates are read as text (YYYY-MM-DD) so the driver does not turn them into
@@ -64,6 +70,19 @@ export const tripModel = {
     } finally {
       client.release();
     }
+  },
+
+  async listForUser(userId: string): Promise<TripWithRole[]> {
+    const { rows } = await pool.query<TripWithRole>(
+      `SELECT ${TRIP_COLUMNS}, m.role
+         FROM trips t
+         JOIN trip_members m ON m.trip_id = t.id
+        WHERE m.user_id = $1
+        ORDER BY t.start_date, t.created_at, t.id`,
+      [userId],
+    );
+
+    return rows;
   },
 };
 

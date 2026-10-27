@@ -1,14 +1,12 @@
-import type { Trip, TripModel } from '../models/trip.model.js';
+import type { TripModel, TripWithRole } from '../models/trip.model.js';
 import { AppError } from '../utils/AppError.js';
 import { isForeignKeyViolation } from '../utils/dbErrors.js';
 import type { CreateTripInput } from '../validators/trip.validators.js';
 
 const DEFAULT_MAX_MEMBERS = 15;
 
-export type TripWithRole = Trip & { role: 'organizer' | 'member' };
-
 interface TripServiceDependencies {
-  tripModel: Pick<TripModel, 'createWithOrganizer'>;
+  tripModel: Pick<TripModel, 'createWithOrganizer' | 'listForUser'>;
 }
 
 export function createTripService({ tripModel }: TripServiceDependencies) {
@@ -33,6 +31,10 @@ export function createTripService({ tripModel }: TripServiceDependencies) {
         }
         throw error;
       }
+    },
+
+    listTrips(userId: string): Promise<TripWithRole[]> {
+      return tripModel.listForUser(userId);
     },
   };
 }
