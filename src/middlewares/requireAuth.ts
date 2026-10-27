@@ -1,9 +1,7 @@
 import type { RequestHandler } from 'express';
-import { AppError } from '../utils/AppError.js';
+import { getAuthenticatedUserId } from '../utils/session.js';
 
 export const requireAuth: RequestHandler = (req, _res, next) => {
-  if (!req.session.userId) {
-    throw new AppError(401, 'UNAUTHENTICATED', 'Log in required');
-  }
+  getAuthenticatedUserId(req);
   next();
 };
