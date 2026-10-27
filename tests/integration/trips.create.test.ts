@@ -206,6 +206,7 @@ describe('trip service', () => {
         createWithOrganizer: async () => {
           throw new Error('database is down');
         },
+        listForUser: async () => [],
       },
     });
 
