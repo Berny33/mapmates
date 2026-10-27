@@ -4,6 +4,7 @@ import {
   sessionCookieOptions,
 } from '../config/session.js';
 import type { AuthService } from '../services/auth.service.js';
+import { getAuthenticatedUserId } from '../utils/session.js';
 
 function regenerateSession(req: Request): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -43,7 +44,7 @@ export function createAuthController(authService: AuthService) {
 
     async me(req: Request, res: Response): Promise<void> {
       const user = await authService.getCurrentUser(
-        req.session.userId as string,
+        getAuthenticatedUserId(req),
       );
 
       res.status(200).json(user);
