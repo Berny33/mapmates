@@ -2,8 +2,7 @@ import { Router } from 'express';
 import { createTripController } from '../controllers/trip.controller.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
 import { validate } from '../middlewares/validate.js';
-import { tripModel } from '../models/trip.model.js';
-import { createTripService } from '../services/trip.service.js';
+import { createTripService, tripModel } from '../services/trip.service.js';
 import { createTripSchema } from '../validators/trip.validators.js';
 
 const router = Router();

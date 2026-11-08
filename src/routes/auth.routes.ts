@@ -3,8 +3,7 @@ import { createAuthController } from '../controllers/auth.controller.js';
 import { createRateLimiter } from '../middlewares/rateLimit.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
 import { validate } from '../middlewares/validate.js';
-import { userModel } from '../models/user.model.js';
-import { createAuthService } from '../services/auth.service.js';
+import { createAuthService, userModel } from '../services/auth.service.js';
 import { loginSchema, registerSchema } from '../validators/auth.validators.js';
 
 const router = Router();
