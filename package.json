@@ -4,7 +4,7 @@
   "private": true,
   "description": "Web platform to plan trips together or alone: propose places and activities, vote on them and see the resulting itinerary day by day on an interactive map.",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "backend/dist/server.js",
   "engines": {
     "node": ">=24"
   },
@@ -12,15 +12,15 @@
     "doc": "docs"
   },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch backend/src/server.ts",
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/server.js",
+    "start": "node backend/dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "tsx tests/setup/validate-test-env.ts && vitest run",
-    "test:coverage": "tsx tests/setup/validate-test-env.ts && vitest run --coverage",
+    "test": "tsx backend/tests/setup/validate-test-env.ts && vitest run",
+    "test:coverage": "tsx backend/tests/setup/validate-test-env.ts && vitest run --coverage",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "migrate": "tsx db/migrate-cli.ts"
+    "migrate": "tsx backend/db/migrate-cli.ts"
   },
   "repository": {
     "type": "git",
