@@ -32,27 +32,27 @@ The stack is preliminary and can be adjusted during development.
 ```
 mapmates/
 |-- docs/                  project documentation
-|-- db/
-|   |-- migrations/        SQL files that create and change the schema
-|-- public/                frontend served as static files
-|   |-- css/               tokens.css (colors, type scale), layout and components
-|   |-- js/                api.js (fetch wrapper), pages and map modules
-|   |-- index.html, login.html, trips.html, trip.html
-|-- src/
-|   |-- server.ts          starts the HTTP server
-|   |-- app.ts             builds the Express app (no listen), used by tests
-|   |-- config/            environment variables and database pool
-|   |-- routes/            one file per resource
-|   |-- middlewares/       auth, membership, validation, errors, rate limits
-|   |-- controllers/       HTTP layer
-|   |-- services/          business rules
-|   |-- adapters/          external services behind interfaces (geocoding)
-|   |-- models/            SQL queries
-|   |-- validators/        Zod schemas
-|   |-- utils/             AppError, token generator, ics builder
-|-- tests/
-|   |-- integration/
-|   |-- e2e/
+|-- backend/
+|   |-- db/migrations/     SQL files that create and change the schema
+|   |-- src/
+|   |   |-- server.ts      starts the HTTP server
+|   |   |-- app.ts         builds the Express app (no listen), used by tests
+|   |   |-- config/        environment variables and database pool
+|   |   |-- routes/        one file per resource
+|   |   |-- middlewares/   auth, membership, validation, errors, rate limits
+|   |   |-- controllers/   HTTP layer
+|   |   |-- services/      business rules
+|   |   |-- adapters/      external services behind interfaces (geocoding)
+|   |   |-- models/        database row types
+|   |   |-- validators/    Zod schemas
+|   |   |-- utils/         AppError, token generator, ics builder
+|   |-- tests/
+|   |   |-- integration/
+|   |   |-- e2e/
+|-- frontend/              static frontend served as files
+|   |-- css/               shared design tokens, layout and components
+|   |-- js/                ES modules for API and page behavior
+|   |-- index.html, login.html, register.html, trips.html, create-trip.html
 |-- .env.example
 |-- .gitignore
 |-- package.json
@@ -150,7 +150,7 @@ Unexpected errors answer 500 with a generic message. Stack traces and SQL errors
 
 ## 9. Frontend
 
-Static pages served by Express. `public/js/api.js` wraps `fetch` and handles 401 by redirecting to the login page. Leaflet draws the itinerary map. Colors, type scale and spacing live in CSS variables (`tokens.css`): dark tones with a single accent color, large type and a responsive layout for desktop, tablet and mobile.
+Plain HTML, CSS and JavaScript ES modules in `frontend/` are served by Express under the same origin as the API. `frontend/js/api.js` wraps `fetch` with the `/api` base path; protected pages redirect unauthenticated users to login. The current pages support registration, login, trip creation and listing. Shared CSS variables define the dark palette, single accent color, type scale and responsive layout. The itinerary map and its Leaflet integration remain planned work.
 
 ## 10. Testing and CI/CD (planned)
 
