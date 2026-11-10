@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MapMates — Create trip</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-grid" aria-hidden="true"></div>
+    <div class="ambient ambient-glow" aria-hidden="true"></div>
+
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="MapMates home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>MapMates</span>
+      </a>
+      <div class="app-actions">
+        <span class="user-name" id="userName" aria-live="polite"></span>
+        <a class="button button-secondary" href="/trips.html">My trips</a>
+      </div>
+    </header>
+
+    <main class="content-shell">
+      <section class="form-card">
+        <h1>New trip</h1>
+        <p>Set the dates and choose how you want to explore.</p>
+
+        <form class="trip-form" id="tripForm" novalidate>
+          <div class="field">
+            <label for="tripName">Trip name</label>
+            <input class="input" id="tripName" name="name" type="text" placeholder="e.g. Kyoto Autumn Discovery" minlength="1" maxlength="100" required />
+            <span class="field-error" data-error-for="name"></span>
+          </div>
+
+          <div class="field">
+            <label for="destination">Destination</label>
+            <input class="input" id="destination" name="destination" type="text" placeholder="e.g. Kyoto, Japan" minlength="1" maxlength="100" required />
+            <span class="field-error" data-error-for="destination"></span>
+          </div>
+
+          <div class="date-row">
+            <div class="field">
+              <label for="startDate">Start date</label>
+              <input class="input" id="startDate" name="startDate" type="date" required />
+              <span class="field-error" data-error-for="startDate"></span>
+            </div>
+            <div class="field">
+              <label for="endDate">End date</label>
+              <input class="input" id="endDate" name="endDate" type="date" required />
+              <span class="field-error" data-error-for="endDate"></span>
+            </div>
+          </div>
+
+          <fieldset class="type-row" aria-label="Trip type">
+            <legend class="field-label">Trip type</legend>
+            <label class="type-option">
+              <input type="radio" name="type" value="solo" />
+              <strong>Solo trip</strong>
+              <small>Just for you</small>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="type" value="collaborative" checked />
+              <strong>Group trip</strong>
+              <small>Plan with friends</small>
+            </label>
+          </fieldset>
+
+          <p class="form-note">The trip type can't be changed later.</p>
+          <button class="button button-primary auth-submit" id="createTripButton" type="submit">Create trip</button>
+          <p class="message form-status" id="tripStatus" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="./js/trips.js"></script>
+  </body>
+</html>

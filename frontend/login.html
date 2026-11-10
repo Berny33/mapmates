@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MapMates — Log in</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body data-auth-mode="login">
+    <div class="ambient ambient-grid" aria-hidden="true"></div>
+    <div class="ambient ambient-glow" aria-hidden="true"></div>
+
+    <main class="auth-layout">
+      <div class="auth-wrap">
+        <a class="auth-brand" href="/" aria-label="MapMates home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>MapMates</span>
+        </a>
+
+        <section class="auth-card" aria-label="Account access">
+          <div class="auth-tabs" role="tablist" aria-label="Choose account action">
+            <button class="tab-button" id="loginTab" type="button" role="tab" data-auth-tab="login">Log in</button>
+            <button class="tab-button" id="registerTab" type="button" role="tab" data-auth-tab="register">Sign up</button>
+          </div>
+
+          <form id="authForm" class="form-grid" novalidate>
+            <div class="field" id="nameField" hidden>
+              <label for="nameInput">Name</label>
+              <input class="input" id="nameInput" name="name" type="text" autocomplete="name" placeholder="Alex Morgan" minlength="1" maxlength="60" />
+              <span class="field-error" data-error-for="name"></span>
+            </div>
+
+            <div class="field">
+              <label for="emailInput">Email</label>
+              <input class="input" id="emailInput" name="email" type="email" autocomplete="email" placeholder="alex@example.com" maxlength="254" required />
+              <span class="field-error" data-error-for="email"></span>
+            </div>
+
+            <div class="field">
+              <label for="passwordInput">Password</label>
+              <input class="input" id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="••••••••••••" minlength="8" required />
+              <span class="field-error" data-error-for="password"></span>
+            </div>
+
+            <button class="button button-primary auth-submit" id="authSubmit" type="submit">Log in</button>
+            <p class="message" id="formMessage" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <a class="auth-back" href="/">Back to MapMates</a>
+      </div>
+    </main>
+
+    <script type="module" src="./js/auth.js"></script>
+  </body>
+</html>

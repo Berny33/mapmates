@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MapMates — My trips</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-grid" aria-hidden="true"></div>
+    <div class="ambient ambient-glow" aria-hidden="true"></div>
+
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="MapMates home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>MapMates</span>
+      </a>
+      <div class="app-actions">
+        <span class="user-name" id="userName" aria-live="polite"></span>
+        <button class="button button-secondary" id="logoutButton" type="button">Log out</button>
+      </div>
+    </header>
+
+    <main class="content-shell">
+      <div class="content-heading">
+        <h1>My trips</h1>
+        <a class="button button-primary" href="/create-trip.html">
+          <span aria-hidden="true">+</span>
+          New trip
+        </a>
+      </div>
+
+      <p class="message" id="tripStatus" aria-live="polite"></p>
+      <section class="trip-grid" id="tripList" aria-label="Your trips" aria-live="polite"></section>
+    </main>
+
+    <script type="module" src="./js/trips.js"></script>
+  </body>
+</html>
