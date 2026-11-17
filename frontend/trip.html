@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MapMates — Trip workspace</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-grid" aria-hidden="true"></div>
+    <div class="ambient ambient-glow" aria-hidden="true"></div>
+
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="MapMates home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>MapMates</span>
+      </a>
+      <div class="app-actions">
+        <span class="user-name" id="userName" aria-live="polite"></span>
+        <a class="button button-secondary" href="/trips.html">My trips</a>
+        <button class="button button-secondary" id="logoutButton" type="button">
+          Log out
+        </button>
+      </div>
+    </header>
+
+    <main class="content-shell trip-workspace">
+      <a class="back-link" href="/trips.html">← My trips</a>
+      <section class="trip-workspace-heading" aria-labelledby="tripName">
+        <p class="eyebrow">Trip workspace</p>
+        <h1 id="tripName">Loading trip…</h1>
+        <p id="tripSummary" class="trip-summary"></p>
+        <p id="tripPageStatus" class="message" aria-live="polite"></p>
+      </section>
+
+      <section
+        class="proposal-result"
+        id="proposalResult"
+        aria-live="polite"
+        hidden
+      ></section>
+
+      <section
+        class="itinerary-section"
+        id="itinerarySection"
+        aria-labelledby="itineraryHeading"
+        hidden
+      >
+        <h2 id="itineraryHeading">Approved activities</h2>
+        <p class="message" id="itineraryStatus" aria-live="polite"></p>
+        <ol class="approved-activities" id="approvedActivities"></ol>
+      </section>
+
+      <section
+        class="form-card proposal-form-card"
+        id="proposalWorkspace"
+        aria-labelledby="proposalHeading"
+        hidden
+      >
+        <h2 id="proposalHeading">Propose an activity</h2>
+        <p>Search for a place, choose it, and add the activity details.</p>
+
+        <section class="place-search" aria-labelledby="placeSearchHeading">
+          <h3 id="placeSearchHeading">Find a place</h3>
+          <form id="placeSearchForm" class="place-search-form" novalidate>
+            <div class="field">
+              <label for="placeSearchInput">Place name</label>
+              <input
+                class="input"
+                id="placeSearchInput"
+                name="q"
+                type="search"
+                minlength="2"
+                maxlength="100"
+                autocomplete="off"
+                required
+              />
+            </div>
+            <button
+              class="button button-secondary"
+              id="searchPlacesButton"
+              type="submit"
+            >
+              Search
+            </button>
+          </form>
+          <p class="message" id="placeSearchStatus" aria-live="polite"></p>
+          <ul
+            class="place-results"
+            id="placeResults"
+            aria-label="Place search results"
+          ></ul>
+          <p class="selected-place" id="selectedPlace" aria-live="polite"></p>
+        </section>
+
+        <form id="proposalForm" class="proposal-form" novalidate>
+          <div class="field">
+            <label for="proposalCategory">Category</label>
+            <select
+              class="input"
+              id="proposalCategory"
+              name="category"
+              required
+            >
+              <option value="">Choose a category</option>
+              <option value="food">Food</option>
+              <option value="sightseeing">Sightseeing</option>
+              <option value="culture">Culture</option>
+              <option value="nature">Nature</option>
+              <option value="nightlife">Nightlife</option>
+              <option value="shopping">Shopping</option>
+              <option value="transport">Transport</option>
+              <option value="other">Other</option>
+            </select>
+            <span class="field-error" data-error-for="category"></span>
+          </div>
+
+          <div class="field">
+            <label for="proposalDay">Day</label>
+            <input
+              class="input"
+              id="proposalDay"
+              name="day"
+              type="date"
+              required
+            />
+            <span class="field-error" data-error-for="day"></span>
+          </div>
+
+          <div class="date-row">
+            <div class="field">
+              <label for="startTime">Start time</label>
+              <input
+                class="input"
+                id="startTime"
+                name="startTime"
+                type="time"
+                required
+              />
+              <span class="field-error" data-error-for="startTime"></span>
+            </div>
+            <div class="field">
+              <label for="endTime">End time</label>
+              <input
+                class="input"
+                id="endTime"
+                name="endTime"
+                type="time"
+                required
+              />
+              <span class="field-error" data-error-for="endTime"></span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="proposalNote"
+              >Note
+              <span class="form-hint"
+                >(optional, 280 characters max)</span
+              ></label
+            >
+            <textarea
+              class="input proposal-note"
+              id="proposalNote"
+              name="note"
+              maxlength="280"
+            ></textarea>
+            <span class="field-error" data-error-for="note"></span>
+          </div>
+
+          <div class="field">
+            <label for="votingDurationHours">Voting duration</label>
+            <div class="duration-input">
+              <input
+                class="input"
+                id="votingDurationHours"
+                name="votingDurationHours"
+                type="number"
+                min="1"
+                max="72"
+                step="1"
+                value="24"
+                required
+              />
+              <span>hours</span>
+            </div>
+            <span class="field-hint">Choose between 1 and 72 hours.</span>
+            <span
+              class="field-error"
+              data-error-for="votingDurationHours"
+            ></span>
+          </div>
+
+          <button
+            class="button button-primary"
+            id="createProposalButton"
+            type="submit"
+          >
+            Create proposal
+          </button>
+          <p class="message" id="proposalStatus" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="./js/trip.js"></script>
+  </body>
+</html>
