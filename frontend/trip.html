@@ -46,10 +46,12 @@
         aria-labelledby="proposalsHeading"
         hidden
       >
-        <h2 id="proposalsHeading">Open proposals</h2>
-        <p>Choose for or against. Select the same option again to withdraw your vote.</p>
+        <h2 id="proposalsHeading">Proposals</h2>
+        <p class="proposals-description">
+          Review the proposals, their status, voting time and current votes.
+        </p>
         <p class="message" id="proposalsStatus" aria-live="polite"></p>
-        <ol class="open-proposals" id="openProposals"></ol>
+        <ol class="proposal-feed" id="proposalFeed"></ol>
       </section>
 
       <section

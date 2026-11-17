@@ -23,7 +23,7 @@ const createProposalButton = document.getElementById('createProposalButton');
 const proposalResult = document.getElementById('proposalResult');
 const proposalsSection = document.getElementById('proposalsSection');
 const proposalsStatus = document.getElementById('proposalsStatus');
-const openProposals = document.getElementById('openProposals');
+const proposalFeed = document.getElementById('proposalFeed');
 const itinerarySection = document.getElementById('itinerarySection');
 const itineraryStatus = document.getElementById('itineraryStatus');
 const approvedActivities = document.getElementById('approvedActivities');
@@ -31,7 +31,8 @@ const userName = document.getElementById('userName');
 
 let trip = null;
 let selectedPlace = null;
-let openProposalData = [];
+let proposalData = [];
+let proposalCountdownInterval = null;
 
 function showStatus(node, message, kind = '') {
   node.textContent = message;
@@ -233,11 +234,11 @@ function renderApprovedActivities(proposals) {
   showStatus(itineraryStatus, '');
 }
 
-function renderOpenProposals(proposals) {
-  openProposals.replaceChildren();
+function renderProposals(proposals) {
+  proposalFeed.replaceChildren();
 
   if (proposals.length === 0) {
-    showStatus(proposalsStatus, 'No proposals open for voting yet.');
+    showStatus(proposalsStatus, 'No proposals yet.');
     return;
   }
 
@@ -257,12 +258,21 @@ function renderOpenProposals(proposals) {
     const counts = document.createElement('p');
     counts.className = 'proposal-vote-counts';
     counts.textContent = `For: ${proposal.forVotes} · Against: ${proposal.againstVotes}`;
-    item.append(heading, schedule, category, counts);
 
-    if (
-      proposal.status === 'open' &&
-      new Date(proposal.votingDeadline).getTime() > Date.now()
-    ) {
+    const remainingTime = getRemainingVotingTime(proposal.votingDeadline);
+    const votingIsOpen = proposal.status === 'open' && remainingTime !== null;
+    const status = document.createElement('p');
+    status.className = 'proposal-status';
+    status.textContent = getProposalStatusLabel(proposal.status, votingIsOpen);
+    item.append(heading, schedule, category, counts, status);
+
+    if (votingIsOpen) {
+      const remaining = document.createElement('p');
+      remaining.className = 'proposal-remaining';
+      remaining.dataset.proposalRemaining = proposal.id;
+      remaining.textContent = `Time remaining: ${remainingTime}`;
+      item.appendChild(remaining);
+
       const actions = document.createElement('div');
       actions.className = 'proposal-vote-actions';
 
@@ -282,21 +292,63 @@ function renderOpenProposals(proposals) {
       item.appendChild(actions);
     } else {
       const closed = document.createElement('p');
-      closed.className = 'message';
+      closed.className = 'proposal-closed';
       closed.textContent = 'Voting is closed.';
       item.appendChild(closed);
     }
 
-    openProposals.appendChild(item);
+    proposalFeed.appendChild(item);
   });
 }
 
-async function loadOpenProposals() {
+function getRemainingVotingTime(deadline) {
+  const remainingMinutes = Math.ceil(
+    (new Date(deadline).getTime() - Date.now()) / 60_000,
+  );
+  if (remainingMinutes <= 0) {
+    return null;
+  }
+
+  const days = Math.floor(remainingMinutes / (24 * 60));
+  const hours = Math.floor((remainingMinutes % (24 * 60)) / 60);
+  const minutes = remainingMinutes % 60;
+  const parts = [];
+
+  if (days > 0) {
+    parts.push(`${days}d`);
+  }
+  if (hours > 0) {
+    parts.push(`${hours}h`);
+  }
+  if (minutes > 0 || parts.length === 0) {
+    parts.push(`${minutes}m`);
+  }
+
+  return parts.join(' ');
+}
+
+function getProposalStatusLabel(status, votingIsOpen) {
+  if (status === 'open') {
+    return votingIsOpen ? 'Voting open' : 'Voting deadline passed';
+  }
+  if (status === 'tied') {
+    return 'Tied · organizer decision pending';
+  }
+  if (status === 'approved') {
+    return 'Approved';
+  }
+  if (status === 'rejected_conflict') {
+    return 'Rejected · schedule conflict';
+  }
+  return 'Rejected';
+}
+
+async function loadProposals() {
   try {
-    openProposalData = await requestJson(
+    proposalData = await requestJson(
       `/trips/${encodeURIComponent(tripId)}/proposals`,
     );
-    renderOpenProposals(openProposalData);
+    renderProposals(proposalData);
     proposalsSection.hidden = false;
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
@@ -313,8 +365,35 @@ async function loadOpenProposals() {
   }
 }
 
+async function updateProposalCountdowns() {
+  let deadlineReached = false;
+
+  proposalFeed
+    .querySelectorAll('[data-proposal-remaining]')
+    .forEach((remainingNode) => {
+      const proposal = proposalData.find(
+        (item) => item.id === remainingNode.dataset.proposalRemaining,
+      );
+      if (!proposal) {
+        return;
+      }
+
+      const remaining = getRemainingVotingTime(proposal.votingDeadline);
+      if (remaining === null) {
+        deadlineReached = true;
+      } else {
+        remainingNode.textContent = `Time remaining: ${remaining}`;
+      }
+    });
+
+  if (deadlineReached) {
+    await loadProposals();
+    await loadApprovedActivities();
+  }
+}
+
 async function castVote(proposalId, value) {
-  openProposals.querySelectorAll('button').forEach((button) => {
+  proposalFeed.querySelectorAll('button').forEach((button) => {
     button.disabled = true;
   });
 
@@ -329,10 +408,10 @@ async function castVote(proposalId, value) {
       },
     );
 
-    openProposalData = openProposalData.map((proposal) =>
+    proposalData = proposalData.map((proposal) =>
       proposal.id === proposalId ? { ...proposal, ...result } : proposal,
     );
-    renderOpenProposals(openProposalData);
+    renderProposals(proposalData);
     showStatus(
       proposalsStatus,
       result.userVote === null ? 'Your vote was withdrawn.' : 'Your vote was recorded.',
@@ -347,11 +426,12 @@ async function castVote(proposalId, value) {
     const message =
       error instanceof Error ? error.message : 'Unable to submit your vote.';
     if (error instanceof ApiError && error.status === 409) {
-      await loadOpenProposals();
+      await loadProposals();
+      await loadApprovedActivities();
     }
     showStatus(proposalsStatus, message, 'error');
   } finally {
-    openProposals.querySelectorAll('button').forEach((button) => {
+    proposalFeed.querySelectorAll('button').forEach((button) => {
       button.disabled = false;
     });
   }
@@ -428,11 +508,8 @@ async function createProposal(event) {
           )}.`;
     showStatus(proposalStatus, confirmation, 'success');
     renderProposalResult(proposal);
-    if (proposal.status === 'approved') {
-      await loadApprovedActivities();
-    } else {
-      await loadOpenProposals();
-    }
+    await loadProposals();
+    await loadApprovedActivities();
     proposalForm.reset();
     document.getElementById('votingDurationHours').value = '24';
     selectedPlace = null;
@@ -500,7 +577,14 @@ async function initialize() {
     proposalWorkspace.hidden = false;
     placeSearchForm.addEventListener('submit', searchPlaces);
     proposalForm.addEventListener('submit', createProposal);
-    await Promise.all([loadOpenProposals(), loadApprovedActivities()]);
+    await loadProposals();
+    await loadApprovedActivities();
+    if (proposalCountdownInterval === null) {
+      proposalCountdownInterval = window.setInterval(
+        updateProposalCountdowns,
+        60_000,
+      );
+    }
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       redirectToLogin(`/trip.html?id=${encodeURIComponent(tripId)}`);
