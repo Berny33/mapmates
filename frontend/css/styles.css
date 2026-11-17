@@ -759,7 +759,8 @@ input:focus-visible {
   margin-top: 0.5rem;
 }
 
-.itinerary-section {
+.itinerary-section,
+.proposals-section {
   width: min(52rem, 100%);
   margin: 0 auto 1.5rem;
   padding: 1.25rem 1.5rem;
@@ -768,12 +769,15 @@ input:focus-visible {
   background: rgba(19, 19, 20, 0.65);
 }
 
-.itinerary-section[hidden] {
+.itinerary-section[hidden],
+.proposals-section[hidden] {
   display: none;
 }
 
 .itinerary-section h2,
+.proposals-section h2,
 .approved-activities h3,
+.open-proposals h3,
 .approved-activities p {
   margin: 0;
 }
@@ -781,6 +785,61 @@ input:focus-visible {
 .itinerary-section h2 {
   font-family: var(--font-display);
   font-size: 1.1rem;
+}
+
+.proposals-section h2 {
+  margin-bottom: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.open-proposals {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.open-proposals li {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: rgba(14, 14, 15, 0.5);
+}
+
+.open-proposals h3 {
+  font-size: 1rem;
+}
+
+.open-proposals p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.open-proposals .proposal-category {
+  color: var(--accent);
+  text-transform: capitalize;
+}
+
+.proposal-vote-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.proposal-vote-actions .button {
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+}
+
+.proposal-vote-actions .button[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .approved-activities {

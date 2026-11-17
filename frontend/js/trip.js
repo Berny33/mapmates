@@ -21,6 +21,9 @@ const proposalWorkspace = document.getElementById('proposalWorkspace');
 const proposalStatus = document.getElementById('proposalStatus');
 const createProposalButton = document.getElementById('createProposalButton');
 const proposalResult = document.getElementById('proposalResult');
+const proposalsSection = document.getElementById('proposalsSection');
+const proposalsStatus = document.getElementById('proposalsStatus');
+const openProposals = document.getElementById('openProposals');
 const itinerarySection = document.getElementById('itinerarySection');
 const itineraryStatus = document.getElementById('itineraryStatus');
 const approvedActivities = document.getElementById('approvedActivities');
@@ -28,6 +31,7 @@ const userName = document.getElementById('userName');
 
 let trip = null;
 let selectedPlace = null;
+let openProposalData = [];
 
 function showStatus(node, message, kind = '') {
   node.textContent = message;
@@ -229,6 +233,130 @@ function renderApprovedActivities(proposals) {
   showStatus(itineraryStatus, '');
 }
 
+function renderOpenProposals(proposals) {
+  openProposals.replaceChildren();
+
+  if (proposals.length === 0) {
+    showStatus(proposalsStatus, 'No proposals open for voting yet.');
+    return;
+  }
+
+  showStatus(proposalsStatus, '');
+  proposals.forEach((proposal) => {
+    const item = document.createElement('li');
+    const heading = document.createElement('h3');
+    heading.textContent = proposal.placeName;
+
+    const schedule = document.createElement('p');
+    schedule.textContent = `${proposal.day} · ${proposal.startTime}–${proposal.endTime}`;
+
+    const category = document.createElement('p');
+    category.className = 'proposal-category';
+    category.textContent = proposal.category;
+
+    const counts = document.createElement('p');
+    counts.className = 'proposal-vote-counts';
+    counts.textContent = `For: ${proposal.forVotes} · Against: ${proposal.againstVotes}`;
+    item.append(heading, schedule, category, counts);
+
+    if (
+      proposal.status === 'open' &&
+      new Date(proposal.votingDeadline).getTime() > Date.now()
+    ) {
+      const actions = document.createElement('div');
+      actions.className = 'proposal-vote-actions';
+
+      ['for', 'against'].forEach((value) => {
+        const button = document.createElement('button');
+        button.className = 'button button-secondary';
+        button.type = 'button';
+        button.textContent = `Vote ${value}`;
+        button.setAttribute(
+          'aria-pressed',
+          String(proposal.userVote === value),
+        );
+        button.addEventListener('click', () => castVote(proposal.id, value));
+        actions.appendChild(button);
+      });
+
+      item.appendChild(actions);
+    } else {
+      const closed = document.createElement('p');
+      closed.className = 'message';
+      closed.textContent = 'Voting is closed.';
+      item.appendChild(closed);
+    }
+
+    openProposals.appendChild(item);
+  });
+}
+
+async function loadOpenProposals() {
+  try {
+    openProposalData = await requestJson(
+      `/trips/${encodeURIComponent(tripId)}/proposals`,
+    );
+    renderOpenProposals(openProposalData);
+    proposalsSection.hidden = false;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      redirectToLogin(`/trip.html?id=${encodeURIComponent(tripId)}`);
+      return;
+    }
+
+    showStatus(
+      proposalsStatus,
+      error instanceof Error ? error.message : 'Unable to load proposals.',
+      'error',
+    );
+    proposalsSection.hidden = false;
+  }
+}
+
+async function castVote(proposalId, value) {
+  openProposals.querySelectorAll('button').forEach((button) => {
+    button.disabled = true;
+  });
+
+  try {
+    const result = await requestJson(
+      `/trips/${encodeURIComponent(tripId)}/proposals/${encodeURIComponent(
+        proposalId,
+      )}/vote`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ value }),
+      },
+    );
+
+    openProposalData = openProposalData.map((proposal) =>
+      proposal.id === proposalId ? { ...proposal, ...result } : proposal,
+    );
+    renderOpenProposals(openProposalData);
+    showStatus(
+      proposalsStatus,
+      result.userVote === null ? 'Your vote was withdrawn.' : 'Your vote was recorded.',
+      'success',
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      redirectToLogin(`/trip.html?id=${encodeURIComponent(tripId)}`);
+      return;
+    }
+
+    const message =
+      error instanceof Error ? error.message : 'Unable to submit your vote.';
+    if (error instanceof ApiError && error.status === 409) {
+      await loadOpenProposals();
+    }
+    showStatus(proposalsStatus, message, 'error');
+  } finally {
+    openProposals.querySelectorAll('button').forEach((button) => {
+      button.disabled = false;
+    });
+  }
+}
+
 async function loadApprovedActivities() {
   try {
     const proposals = await requestJson(
@@ -302,6 +430,8 @@ async function createProposal(event) {
     renderProposalResult(proposal);
     if (proposal.status === 'approved') {
       await loadApprovedActivities();
+    } else {
+      await loadOpenProposals();
     }
     proposalForm.reset();
     document.getElementById('votingDurationHours').value = '24';
@@ -370,7 +500,7 @@ async function initialize() {
     proposalWorkspace.hidden = false;
     placeSearchForm.addEventListener('submit', searchPlaces);
     proposalForm.addEventListener('submit', createProposal);
-    await loadApprovedActivities();
+    await Promise.all([loadOpenProposals(), loadApprovedActivities()]);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       redirectToLogin(`/trip.html?id=${encodeURIComponent(tripId)}`);

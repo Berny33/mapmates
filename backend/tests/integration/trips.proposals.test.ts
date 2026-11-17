@@ -7,6 +7,8 @@ import { buildUser, loginAs } from '../helpers/auth.js';
 import { createTrip } from '../helpers/trips.js';
 
 const proposalPath = (tripId: string) => `/api/trips/${tripId}/proposals`;
+const proposalVotePath = (tripId: string, proposalId: string) =>
+  `${proposalPath(tripId)}/${proposalId}/vote`;
 
 const validProposal = {
   placeName: 'Louvre Museum',
@@ -219,5 +221,162 @@ describe('trip proposals (US-08)', () => {
       vi.unstubAllGlobals();
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe('proposal voting (US-09)', () => {
+  it('records, changes, and withdraws a vote while voting is open [BR-02]', async () => {
+    const member = await loginAs();
+    const trip = await createTrip(member);
+    const proposal = await member
+      .post(proposalPath(trip.id))
+      .send(validProposal)
+      .expect(201);
+    const path = proposalVotePath(trip.id, proposal.body.id);
+
+    await member
+      .post(path)
+      .send({ value: 'for' })
+      .expect(200, {
+        proposalId: proposal.body.id,
+        forVotes: 1,
+        againstVotes: 0,
+        userVote: 'for',
+      });
+
+    await member
+      .post(path)
+      .send({ value: 'against' })
+      .expect(200, {
+        proposalId: proposal.body.id,
+        forVotes: 0,
+        againstVotes: 1,
+        userVote: 'against',
+      });
+
+    await member
+      .post(path)
+      .send({ value: 'against' })
+      .expect(200, {
+        proposalId: proposal.body.id,
+        forVotes: 0,
+        againstVotes: 0,
+        userVote: null,
+      });
+
+    const { rows } = await pool.query<{ count: number }>(
+      'SELECT count(*)::int AS count FROM proposal_votes WHERE proposal_id = $1',
+      [proposal.body.id],
+    );
+    expect(rows[0].count).toBe(0);
+  });
+
+  it('lists open proposals with vote counts and the current member vote', async () => {
+    const organizer = await loginAs();
+    const member = await loginAs(
+      buildUser({ name: 'Luis', email: 'luis@example.com' }),
+    );
+    const trip = await createTrip(organizer);
+    const proposal = await organizer
+      .post(proposalPath(trip.id))
+      .send(validProposal)
+      .expect(201);
+    const closedProposal = await organizer
+      .post(proposalPath(trip.id))
+      .send({ ...validProposal, placeName: 'Closed proposal' })
+      .expect(201);
+    await pool.query("UPDATE proposals SET status = 'rejected' WHERE id = $1", [
+      closedProposal.body.id,
+    ]);
+
+    await organizer
+      .post(proposalVotePath(trip.id, proposal.body.id))
+      .send({ value: 'for' })
+      .expect(200);
+
+    const response = await organizer
+      .get(proposalPath(trip.id))
+      .expect(200);
+    expect(response.body).toEqual([
+      expect.objectContaining({
+        id: proposal.body.id,
+        placeName: 'Louvre Museum',
+        status: 'open',
+        forVotes: 1,
+        againstVotes: 0,
+        userVote: 'for',
+      }),
+    ]);
+
+    await request(app).get(proposalPath(trip.id)).expect(401);
+    await member.get(proposalPath(trip.id)).expect(403);
+    await organizer.get(proposalPath('not-a-uuid')).expect(400);
+    await organizer.get(proposalPath(randomUUID())).expect(404);
+  });
+
+  it('validates vote values and checks membership and proposal existence [ST-03, ST-04, ST-09]', async () => {
+    const organizer = await loginAs();
+    const outsider = await loginAs(
+      buildUser({ name: 'Luis', email: 'luis@example.com' }),
+    );
+    const trip = await createTrip(organizer);
+    const proposal = await organizer
+      .post(proposalPath(trip.id))
+      .send(validProposal)
+      .expect(201);
+
+    await request(app)
+      .post(proposalVotePath(trip.id, proposal.body.id))
+      .send({})
+      .expect(401);
+    await organizer
+      .post(proposalVotePath(trip.id, proposal.body.id))
+      .send({ value: 'abstain' })
+      .expect(400);
+    await organizer
+      .post(proposalVotePath(trip.id, 'not-a-uuid'))
+      .send({ value: 'for' })
+      .expect(400);
+    await outsider
+      .post(proposalVotePath(trip.id, proposal.body.id))
+      .send({ value: 'for' })
+      .expect(403);
+    await organizer
+      .post(proposalVotePath(trip.id, randomUUID()))
+      .send({ value: 'for' })
+      .expect(404);
+  });
+
+  it('rejects votes on closed or expired proposals [BR-03, ST-18]', async () => {
+    const member = await loginAs();
+    const trip = await createTrip(member);
+    const closedProposal = await member
+      .post(proposalPath(trip.id))
+      .send(validProposal)
+      .expect(201);
+    await pool.query("UPDATE proposals SET status = 'rejected' WHERE id = $1", [
+      closedProposal.body.id,
+    ]);
+
+    await member
+      .post(proposalVotePath(trip.id, closedProposal.body.id))
+      .send({ value: 'for' })
+      .expect(409);
+
+    const expiredProposal = await member
+      .post(proposalPath(trip.id))
+      .send({ ...validProposal, placeName: 'Expired proposal' })
+      .expect(201);
+    await pool.query(
+      `UPDATE proposals
+          SET voting_deadline = now() - interval '1 minute'
+        WHERE id = $1`,
+      [expiredProposal.body.id],
+    );
+
+    await member
+      .post(proposalVotePath(trip.id, expiredProposal.body.id))
+      .send({ value: 'for' })
+      .expect(409);
   });
 });
