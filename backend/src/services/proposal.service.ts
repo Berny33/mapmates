@@ -43,6 +43,13 @@ interface VoteCountsRow {
   againstVotes: number;
 }
 
+interface ExpiredProposalRow {
+  id: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
 const PROPOSAL_COLUMNS = `id,
   trip_id AS "tripId",
   author_id AS "authorId",
@@ -197,7 +204,7 @@ export const proposalModel = {
     return rows;
   },
 
-  async listOpenWithVotes(
+  async listWithVotes(
     client: PoolClient,
     tripId: string,
     userId: string,
@@ -225,12 +232,43 @@ export const proposalModel = {
                   AND user_id = $2) AS "userVote"
          FROM proposals
         WHERE trip_id = $1
-          AND status = 'open'
         ORDER BY created_at DESC, id`,
       [tripId, userId],
     );
 
     return rows;
+  },
+
+  async findExpiredOpenForUpdate(
+    client: PoolClient,
+    tripId: string,
+  ): Promise<ExpiredProposalRow[]> {
+    const { rows } = await client.query<ExpiredProposalRow>(
+      `SELECT id,
+              day::text AS day,
+              to_char(start_time, 'HH24:MI') AS "startTime",
+              to_char(end_time, 'HH24:MI') AS "endTime"
+         FROM proposals
+        WHERE trip_id = $1
+          AND status = 'open'
+          AND voting_deadline <= clock_timestamp()
+        ORDER BY id
+        FOR UPDATE`,
+      [tripId],
+    );
+
+    return rows;
+  },
+
+  async updateStatus(
+    client: PoolClient,
+    proposalId: string,
+    status: ProposalStatus,
+  ): Promise<void> {
+    await client.query(
+      'UPDATE proposals SET status = $2 WHERE id = $1',
+      [proposalId, status],
+    );
   },
 
   async findForVoting(
@@ -240,7 +278,7 @@ export const proposalModel = {
   ): Promise<ProposalVotingRow | undefined> {
     const { rows } = await client.query<ProposalVotingRow>(
       `SELECT status,
-              voting_deadline > now() AS "votingOpen"
+              voting_deadline > clock_timestamp() AS "votingOpen"
          FROM proposals
         WHERE trip_id = $1
           AND id = $2
@@ -311,6 +349,42 @@ export const proposalModel = {
   },
 };
 
+async function closeExpiredProposals(
+  client: PoolClient,
+  tripId: string,
+  model: typeof proposalModel,
+): Promise<void> {
+  const expiredProposals = await model.findExpiredOpenForUpdate(
+    client,
+    tripId,
+  );
+
+  for (const proposal of expiredProposals) {
+    const { forVotes, againstVotes } = await model.countVotes(
+      client,
+      proposal.id,
+    );
+    let status: ProposalStatus;
+
+    if (forVotes > againstVotes) {
+      const overlaps = await model.hasApprovedOverlap(
+        client,
+        tripId,
+        proposal.day,
+        proposal.startTime,
+        proposal.endTime,
+      );
+      status = overlaps ? 'rejected_conflict' : 'approved';
+    } else if (forVotes < againstVotes) {
+      status = 'rejected';
+    } else {
+      status = 'tied';
+    }
+
+    await model.updateStatus(client, proposal.id, status);
+  }
+}
+
 interface ProposalServiceDependencies {
   proposalModel: typeof proposalModel;
 }
@@ -319,13 +393,15 @@ export function createProposalService({
   proposalModel,
 }: ProposalServiceDependencies) {
   return {
-    async listOpen(
+    async listAll(
       userId: string,
       tripId: string,
     ): Promise<ProposalWithVotes[]> {
       const client = await pool.connect();
 
       try {
+        await client.query('BEGIN');
+
         const trip = await proposalModel.findTripRole(client, tripId, userId);
         if (!trip) {
           throw new AppError(404, 'NOT_FOUND', 'Trip not found');
@@ -338,7 +414,18 @@ export function createProposalService({
           );
         }
 
-        return proposalModel.listOpenWithVotes(client, tripId, userId);
+        await closeExpiredProposals(client, tripId, proposalModel);
+        const proposals = await proposalModel.listWithVotes(
+          client,
+          tripId,
+          userId,
+        );
+        await client.query('COMMIT');
+
+        return proposals;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
       } finally {
         client.release();
       }

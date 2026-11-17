@@ -105,6 +105,19 @@ flowchart LR
 | Postconditions | At most one vote per user exists for the proposal. |
 | Related | FR-10, BR-02, BR-03 |
 
+### UC-10: View proposals feed
+
+| Field | Description |
+| --- | --- |
+| Actor | Member |
+| Preconditions | The user is authenticated and is a member of the trip. |
+| Trigger | The member opens the trip workspace. |
+| Main flow | 1. The system verifies the member belongs to the trip. 2. The system loads all proposals with their place, category, voting deadline, vote counts and status. 3. If an open proposal's deadline has passed, the system closes it using the vote counts: more votes for approves it unless it conflicts with an approved activity (then it becomes `rejected_conflict`), more votes against rejects it, and a tie becomes `tied` for the organizer to resolve. 4. The system shows the proposals and the remaining voting time for proposals that are still open. |
+| Alternative flows | A1. Voting deadline has passed: the proposal is shown as closed with its resulting status; no further votes are accepted (BR-03). |
+| Exceptions | E1. Not authenticated: 401. E2. User is not a member of the trip: 403. E3. Trip not found: 404. |
+| Postconditions | The member sees all proposals, their current vote counts and statuses. Any overdue open proposal is closed when read. |
+| Related | FR-16, BR-03, BR-04, BR-11 |
+
 ### UC-13: Edit or delete trip
 
 | Field | Description |

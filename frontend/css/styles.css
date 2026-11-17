@@ -777,7 +777,7 @@ input:focus-visible {
 .itinerary-section h2,
 .proposals-section h2,
 .approved-activities h3,
-.open-proposals h3,
+.proposal-feed h3,
 .approved-activities p {
   margin: 0;
 }
@@ -793,7 +793,13 @@ input:focus-visible {
   font-size: 1.1rem;
 }
 
-.open-proposals {
+.proposals-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.proposal-feed {
   display: grid;
   gap: 0.75rem;
   margin: 1rem 0 0;
@@ -801,7 +807,7 @@ input:focus-visible {
   list-style: none;
 }
 
-.open-proposals li {
+.proposal-feed li {
   display: grid;
   gap: 0.5rem;
   padding: 0.85rem;
@@ -810,17 +816,30 @@ input:focus-visible {
   background: rgba(14, 14, 15, 0.5);
 }
 
-.open-proposals h3 {
+.proposal-feed h3 {
   font-size: 1rem;
 }
 
-.open-proposals p {
+.proposal-feed p {
   margin: 0;
   color: var(--muted);
   font-size: var(--text-small);
 }
 
-.open-proposals .proposal-category {
+.proposal-feed .proposal-status {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.proposal-feed .proposal-remaining {
+  color: var(--accent);
+}
+
+.proposal-feed .proposal-closed {
+  color: var(--muted);
+}
+
+.proposal-feed .proposal-category {
   color: var(--accent);
   text-transform: capitalize;
 }
