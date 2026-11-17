@@ -105,10 +105,12 @@ Exactly one organizer per trip: partial unique index on `(trip_id)` where `role 
 | --- | --- | --- |
 | id | uuid | PK |
 | trip_id | uuid | NOT NULL, FK to trips, ON DELETE CASCADE |
-| token | text | NOT NULL, UNIQUE, random and unguessable (BR-07) |
-| expires_at | timestamptz | NOT NULL |
+| token_hash | text | NOT NULL, UNIQUE, SHA-256 hash of the random token (BR-07) |
+| expires_at | timestamptz | NOT NULL; set to 7 days after generation |
 | revoked_at | timestamptz | NULL while the link is active |
 | created_at | timestamptz | NOT NULL, default `now()` |
+
+Only one unrevoked invitation is allowed per trip. Regenerating a link revokes the previous invitation and creates a new token hash. The raw token is returned only when generated and is never stored.
 
 ### proposals
 | Column | Type | Constraints |
@@ -145,7 +147,7 @@ Rules are defined in `docs/01-requirements.md`; this table only shows how each o
 | --- | --- |
 | BR-01 One organizer per trip | Partial unique index on `trip_members(trip_id)` where `role = 'organizer'` |
 | BR-02 One vote per user per proposal | Composite primary key `(proposal_id, user_id)` on `votes` |
-| BR-07 Invitation links are unguessable, expirable and revocable | `invitations.token` (UNIQUE, random), `expires_at`, `revoked_at` |
+| BR-07 Invitation links are unguessable, expirable and revocable | A 32-byte random token; `invitations.token_hash` stores only its SHA-256 hash, with `expires_at` and `revoked_at` |
 | BR-08 Maximum members per trip | `trips.max_members`; the member count is checked by the application when joining |
 | BR-09 Valid time interval | `CHECK (end_time > start_time)` on `proposals` |
 | BR-13 Trip type is immutable | `CHECK` on allowed values; immutability is enforced by the application (no update path for `type`) |

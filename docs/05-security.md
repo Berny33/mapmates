@@ -45,7 +45,7 @@ All fields are validated on the server and invalid input answers 400.
 | Field | Rule |
 | --- | --- |
 | Any id in a path | Valid UUID |
-| Invitation token | Fixed-length base64url string (32 random bytes) |
+| Invitation token | Fixed-length base64url string (32 random bytes); only its SHA-256 hash is stored |
 | `name` (user) | 1 to 60 characters |
 | `email` | Valid format, at most 254 characters, stored in lowercase |
 | `password` | 8 to 72 characters (72 is the bcrypt limit) |
@@ -72,6 +72,7 @@ Output handling: user text (names, notes, place names) is inserted into pages wi
 - Documentation and configuration files do not include real credentials.
 - If a secret is ever committed, it is rotated immediately; removing it from the history is not enough.
 - Logs never contain passwords, session ids or invitation tokens.
+- Invitation tokens are returned only when generated; database records contain only their SHA-256 hashes.
 - `npm audit` is run on dependencies and a secret scan is added to CI in Sprint 3.
 
 ## 6. Critical failures from the project rules
