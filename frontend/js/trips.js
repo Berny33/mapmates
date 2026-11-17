@@ -67,7 +67,202 @@ function createTripCard(trip) {
   footer.appendChild(role);
 
   card.append(top, footer);
+
+  if (trip.type === 'collaborative' && trip.role === 'organizer') {
+    card.appendChild(createInvitationControls(trip.id));
+  }
+
   return card;
+}
+
+function formatInvitationExpiry(value) {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function createInvitationControls(tripId) {
+  const controls = document.createElement('section');
+  controls.className = 'invitation-controls';
+  controls.setAttribute('aria-label', 'Invitation link management');
+
+  const toggleButton = document.createElement('button');
+  toggleButton.className = 'button button-secondary invitation-toggle';
+  toggleButton.type = 'button';
+  toggleButton.textContent = 'Manage invitation';
+  toggleButton.setAttribute('aria-expanded', 'false');
+
+  const panel = document.createElement('div');
+  panel.className = 'invitation-panel';
+  panel.hidden = true;
+
+  const status = document.createElement('p');
+  status.className = 'invitation-status';
+  status.setAttribute('aria-live', 'polite');
+
+  const linkLabel = document.createElement('label');
+  linkLabel.className = 'invitation-link-label';
+  linkLabel.textContent = 'Invitation link';
+
+  const linkRow = document.createElement('div');
+  linkRow.className = 'invitation-link-row';
+  linkRow.hidden = true;
+
+  const linkInput = document.createElement('input');
+  linkInput.className = 'input invitation-link';
+  linkInput.type = 'text';
+  linkInput.readOnly = true;
+  linkInput.setAttribute('aria-label', 'Generated invitation link');
+
+  const copyButton = document.createElement('button');
+  copyButton.className = 'button button-secondary invitation-copy';
+  copyButton.type = 'button';
+  copyButton.textContent = 'Copy';
+
+  const actions = document.createElement('div');
+  actions.className = 'invitation-actions';
+
+  const generateButton = document.createElement('button');
+  generateButton.className = 'button button-primary invitation-generate';
+  generateButton.type = 'button';
+  generateButton.textContent = 'Generate link';
+
+  const revokeButton = document.createElement('button');
+  revokeButton.className = 'button button-secondary invitation-revoke';
+  revokeButton.type = 'button';
+  revokeButton.textContent = 'Revoke';
+  revokeButton.hidden = true;
+
+  linkRow.append(linkInput, copyButton);
+  actions.append(generateButton, revokeButton);
+  panel.append(status, linkLabel, linkRow, actions);
+  controls.append(toggleButton, panel);
+
+  const invitationUrl = `/trips/${encodeURIComponent(tripId)}/invitation`;
+  let loaded = false;
+  let active = false;
+
+  function showPanelStatus(message, kind = '') {
+    status.textContent = message;
+    status.className = `invitation-status ${kind}`;
+  }
+
+  function updateActiveState(isActive, expiresAt) {
+    active = isActive;
+    generateButton.textContent = active ? 'Regenerate link' : 'Generate link';
+    revokeButton.hidden = !active;
+    linkLabel.hidden = !linkInput.value;
+    linkRow.hidden = !linkInput.value;
+
+    if (active && expiresAt) {
+      showPanelStatus(
+        `An invitation link is active until ${formatInvitationExpiry(expiresAt)}. Regenerate it to copy a fresh link.`,
+      );
+    } else {
+      showPanelStatus('No active invitation link.');
+    }
+  }
+
+  async function loadInvitationStatus() {
+    showPanelStatus('Checking invitation status…');
+
+    try {
+      const invitation = await requestJson(invitationUrl);
+      loaded = true;
+      updateActiveState(invitation.active, invitation.expiresAt);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        redirectToLogin('/trips.html');
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Unable to load invitation status.';
+      showPanelStatus(message, 'error');
+    }
+  }
+
+  toggleButton.addEventListener('click', () => {
+    const expanded = toggleButton.getAttribute('aria-expanded') === 'true';
+    toggleButton.setAttribute('aria-expanded', String(!expanded));
+    panel.hidden = expanded;
+
+    if (!expanded && !loaded) {
+      loadInvitationStatus();
+    }
+  });
+
+  generateButton.addEventListener('click', async () => {
+    generateButton.disabled = true;
+    linkInput.value = '';
+    linkLabel.hidden = true;
+    linkRow.hidden = true;
+    showPanelStatus(active ? 'Regenerating invitation link…' : 'Generating invitation link…');
+
+    try {
+      const invitation = await requestJson(invitationUrl, { method: 'POST' });
+      const link = new URL('/join.html', window.location.origin);
+      link.searchParams.set('token', invitation.token);
+      linkInput.value = link.toString();
+      loaded = true;
+      active = true;
+      linkLabel.hidden = false;
+      linkRow.hidden = false;
+      revokeButton.hidden = false;
+      generateButton.textContent = 'Regenerate link';
+      showPanelStatus(
+        `Link ready. It expires ${formatInvitationExpiry(invitation.expiresAt)}. Regenerating it invalidates this link.`,
+        'success',
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        redirectToLogin('/trips.html');
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Unable to generate invitation link.';
+      showPanelStatus(message, 'error');
+    } finally {
+      generateButton.disabled = false;
+    }
+  });
+
+  revokeButton.addEventListener('click', async () => {
+    revokeButton.disabled = true;
+    showPanelStatus('Revoking invitation link…');
+
+    try {
+      await requestJson(invitationUrl, { method: 'DELETE' });
+      active = false;
+      linkInput.value = '';
+      updateActiveState(false, null);
+      showPanelStatus('Invitation link revoked.');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        redirectToLogin('/trips.html');
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Unable to revoke invitation link.';
+      showPanelStatus(message, 'error');
+    } finally {
+      revokeButton.disabled = false;
+    }
+  });
+
+  copyButton.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(linkInput.value);
+      showPanelStatus('Invitation link copied.', 'success');
+    } catch {
+      linkInput.focus();
+      linkInput.select();
+      showPanelStatus('Select and copy the invitation link.', 'error');
+    }
+  });
+
+  return controls;
 }
 
 function renderTrips(trips) {
