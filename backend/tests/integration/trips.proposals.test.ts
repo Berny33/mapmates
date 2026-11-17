@@ -1,0 +1,223 @@
+import { randomUUID } from 'node:crypto';
+import request from 'supertest';
+import { describe, expect, it, vi } from 'vitest';
+import app from '../../src/app.js';
+import { pool } from '../../src/config/db.js';
+import { buildUser, loginAs } from '../helpers/auth.js';
+import { createTrip } from '../helpers/trips.js';
+
+const proposalPath = (tripId: string) => `/api/trips/${tripId}/proposals`;
+
+const validProposal = {
+  placeName: 'Louvre Museum',
+  latitude: 48.8606,
+  longitude: 2.3376,
+  category: 'culture',
+  day: '2026-12-02',
+  startTime: '10:00',
+  endTime: '12:00',
+  note: 'Visit the permanent collection',
+  votingDurationHours: 24,
+};
+
+describe('trip proposals (US-08)', () => {
+  it('creates an open collaborative proposal with a voting deadline [BR-15]', async () => {
+    const member = await loginAs();
+    const trip = await createTrip(member);
+
+    const response = await member
+      .post(proposalPath(trip.id))
+      .send({ ...validProposal, authorId: randomUUID() })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tripId: trip.id,
+      placeName: 'Louvre Museum',
+      latitude: 48.8606,
+      longitude: 2.3376,
+      category: 'culture',
+      day: '2026-12-02',
+      startTime: '10:00',
+      endTime: '12:00',
+      note: 'Visit the permanent collection',
+      status: 'open',
+    });
+    expect(response.body.votingDeadline).toEqual(expect.any(String));
+    expect(new Date(response.body.votingDeadline).getTime()).toBeGreaterThan(
+      Date.now() + 23 * 60 * 60 * 1000,
+    );
+
+    const { rows } = await pool.query<{ author_id: string }>(
+      'SELECT author_id FROM proposals WHERE id = $1',
+      [response.body.id],
+    );
+    expect(rows[0].author_id).toBe((await member.get('/api/auth/me')).body.id);
+  });
+
+  it('creates a solo proposal as approved [FR-13]', async () => {
+    const organizer = await loginAs();
+    const trip = await createTrip(organizer, { type: 'solo' });
+
+    const response = await organizer
+      .post(proposalPath(trip.id))
+      .send(validProposal)
+      .expect(201);
+
+    expect(response.body.status).toBe('approved');
+    const itinerary = await organizer
+      .get(`/api/trips/${trip.id}/itinerary`)
+      .expect(200);
+    expect(itinerary.body).toContainEqual(
+      expect.objectContaining({
+        id: response.body.id,
+        placeName: 'Louvre Museum',
+        status: 'approved',
+      }),
+    );
+  });
+
+  it('lists only approved activities and restricts itinerary access [ST-04]', async () => {
+    const organizer = await loginAs();
+    const member = await loginAs(
+      buildUser({ name: 'Luis', email: 'luis@example.com' }),
+    );
+    const trip = await createTrip(organizer);
+    await organizer.post(proposalPath(trip.id)).send(validProposal).expect(201);
+
+    await organizer.get(`/api/trips/${trip.id}/itinerary`).expect(200, []);
+    await request(app).get(`/api/trips/${trip.id}/itinerary`).expect(401);
+    await member.get(`/api/trips/${trip.id}/itinerary`).expect(403);
+    await organizer.get(`/api/trips/${randomUUID()}/itinerary`).expect(404);
+  });
+
+  it('allows open proposals to overlap but rejects overlaps with approved activities [BR-10, ST-17]', async () => {
+    const member = await loginAs();
+    const collaborativeTrip = await createTrip(member);
+
+    await member
+      .post(proposalPath(collaborativeTrip.id))
+      .send(validProposal)
+      .expect(201);
+    await member
+      .post(proposalPath(collaborativeTrip.id))
+      .send({ ...validProposal, placeName: 'Second museum' })
+      .expect(201);
+
+    const soloTrip = await createTrip(member, {
+      name: 'Solo Paris',
+      type: 'solo',
+    });
+    await member
+      .post(proposalPath(soloTrip.id))
+      .send(validProposal)
+      .expect(201);
+
+    await member
+      .post(proposalPath(soloTrip.id))
+      .send({
+        ...validProposal,
+        placeName: 'Overlapping activity',
+        startTime: '11:00',
+      })
+      .expect(409);
+
+    await member
+      .post(proposalPath(soloTrip.id))
+      .send({
+        ...validProposal,
+        placeName: 'Adjacent activity',
+        startTime: '12:00',
+        endTime: '13:00',
+      })
+      .expect(201);
+  });
+
+  it('prevents concurrent approved activities from overlapping [BR-10, ST-17]', async () => {
+    const organizer = await loginAs();
+    const trip = await createTrip(organizer, { type: 'solo' });
+
+    const responses = await Promise.all([
+      organizer.post(proposalPath(trip.id)).send(validProposal),
+      organizer
+        .post(proposalPath(trip.id))
+        .send({ ...validProposal, placeName: 'Concurrent activity' }),
+    ]);
+
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      201, 409,
+    ]);
+  });
+
+  it('rejects invalid proposal fields [BR-06, BR-09, BR-14, BR-15, ST-14, ST-15, ST-16]', async () => {
+    const member = await loginAs();
+    const trip = await createTrip(member);
+    const invalidProposals = [
+      { ...validProposal, category: 'invalid-category' },
+      { ...validProposal, day: '2026-11-30' },
+      { ...validProposal, startTime: '12:00', endTime: '12:00' },
+      { ...validProposal, note: 'x'.repeat(281) },
+      { ...validProposal, votingDurationHours: 0 },
+      { ...validProposal, votingDurationHours: 73 },
+    ];
+
+    for (const proposal of invalidProposals) {
+      await member.post(proposalPath(trip.id)).send(proposal).expect(400);
+    }
+  });
+
+  it('returns 401 before validation and checks membership and trip existence [ST-03, ST-04, ST-09]', async () => {
+    const invalidPath = proposalPath('not-a-uuid');
+    await request(app).post(invalidPath).send({}).expect(401);
+
+    const member = await loginAs();
+    await member.post(invalidPath).send({}).expect(400);
+
+    const organizer = await loginAs(
+      buildUser({ name: 'Luis', email: 'luis@example.com' }),
+    );
+    const trip = await createTrip(organizer);
+
+    await member.post(proposalPath(trip.id)).send(validProposal).expect(403);
+    await member
+      .post(proposalPath(randomUUID()))
+      .send(validProposal)
+      .expect(404);
+  });
+
+  it('authenticates and validates place searches without calling Nominatim for invalid input', async () => {
+    await request(app).get('/api/places/search?q=Paris').expect(401);
+
+    const member = await loginAs();
+    await member.get('/api/places/search?q=a').expect(400);
+
+    vi.stubEnv('GEOCODING_USER_AGENT', 'MapMates/1.0 (contact@example.com)');
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(
+          JSON.stringify([
+            {
+              name: 'Eiffel Tower',
+              display_name: 'Eiffel Tower, Paris, France',
+              lat: '48.8584',
+              lon: '2.2945',
+            },
+          ]),
+          { status: 200 },
+        ),
+    );
+
+    try {
+      await member.get('/api/places/search?q=Eiffel').expect(200, [
+        {
+          placeName: 'Eiffel Tower',
+          latitude: 48.8584,
+          longitude: 2.2945,
+        },
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
+  });
+});
