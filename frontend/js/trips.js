@@ -72,6 +72,12 @@ function createTripCard(trip) {
   role.textContent = trip.role === 'organizer' ? 'Organizer' : 'Member';
   footer.appendChild(role);
 
+  const openTrip = document.createElement('a');
+  openTrip.className = 'button button-secondary trip-open';
+  openTrip.href = `/trip.html?id=${encodeURIComponent(trip.id)}`;
+  openTrip.textContent = 'Open trip';
+  footer.appendChild(openTrip);
+
   card.append(top, footer);
 
   if (trip.type === 'collaborative' && trip.role === 'organizer') {

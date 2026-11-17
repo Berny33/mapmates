@@ -52,7 +52,7 @@ mapmates/
 |-- frontend/              static frontend served as files
 |   |-- css/               shared design tokens, layout and components
 |   |-- js/                ES modules for API and page behavior
-|   |-- index.html, login.html, register.html, trips.html, create-trip.html
+|   |-- index.html, login.html, register.html, trips.html, create-trip.html, trip.html
 |-- .env.example
 |-- .gitignore
 |-- package.json
@@ -62,6 +62,10 @@ mapmates/
 ```
 
 `app.ts` is separate from `server.ts` so integration tests can load the app without opening a port.
+
+The Nominatim adapter sends the configured `GEOCODING_USER_AGENT`, limits
+upstream searches to one request per second per server process, and maps
+upstream rate limiting to 429 and service failures to 502.
 
 ## 4. Layers and responsibilities
 

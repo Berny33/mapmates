@@ -13,6 +13,8 @@ describe('static frontend pages', () => {
     ['/trips.html', 'My trips'],
     ['/create-trip', 'New trip'],
     ['/create-trip.html', 'New trip'],
+    ['/trip', 'Trip workspace'],
+    ['/trip.html', 'Trip workspace'],
   ])('serves %s from the frontend', async (path, expectedText) => {
     const response = await request(app).get(path);
 

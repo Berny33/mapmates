@@ -86,7 +86,7 @@ Copy-Item .env.example .env
 | `SESSION_SECRET` | Long random value that signs the session cookie |
 | `BCRYPT_ROUNDS` | Password hashing cost (optional, default 12) |
 | `AUTH_RATE_LIMIT` | Login and registration attempts per 15 minutes (optional, default 10) |
-| `GEOCODING_USER_AGENT` | Identification sent to Nominatim (used from Sprint 3) |
+| `GEOCODING_USER_AGENT` | Identifying User-Agent sent to Nominatim, including an application contact |
 
 Connection URLs look like `postgres://mapmates_app:<password>@localhost:5432/mapmates`.
 

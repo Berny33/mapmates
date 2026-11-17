@@ -689,6 +689,234 @@ input:focus-visible {
     background-color 0.25s ease;
 }
 
+.trip-open {
+  margin-left: auto;
+}
+
+.back-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.back-link:hover {
+  color: var(--text);
+}
+
+.trip-workspace-heading {
+  margin-bottom: 2rem;
+}
+
+.trip-workspace-heading h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  letter-spacing: -0.035em;
+}
+
+.trip-summary {
+  margin: 0.5rem 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.form-card.proposal-form-card {
+  width: min(52rem, 100%);
+}
+
+.proposal-result {
+  width: min(52rem, 100%);
+  margin: 0 auto 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: rgba(19, 19, 20, 0.65);
+}
+
+.proposal-result[hidden] {
+  display: none;
+}
+
+.proposal-result h2,
+.proposal-result p {
+  margin: 0;
+}
+
+.proposal-result h2 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+.proposal-result-place {
+  margin-top: 0.5rem !important;
+  font-weight: 600;
+}
+
+.proposal-result > p:not(:first-of-type) {
+  margin-top: 0.5rem;
+}
+
+.itinerary-section {
+  width: min(52rem, 100%);
+  margin: 0 auto 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: rgba(19, 19, 20, 0.65);
+}
+
+.itinerary-section[hidden] {
+  display: none;
+}
+
+.itinerary-section h2,
+.approved-activities h3,
+.approved-activities p {
+  margin: 0;
+}
+
+.itinerary-section h2 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.approved-activities {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.approved-activities li {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: rgba(14, 14, 15, 0.5);
+}
+
+.approved-activities h3 {
+  font-size: 1rem;
+}
+
+.approved-activities p {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.approved-activities .activity-category {
+  color: var(--accent);
+  text-transform: capitalize;
+}
+
+.proposal-form-card h2,
+.place-search h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+}
+
+.proposal-form-card > p {
+  margin: 0.5rem 0 1.5rem;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.place-search {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: rgba(14, 14, 15, 0.5);
+}
+
+.place-search h3 {
+  font-size: 1.1rem;
+}
+
+.place-search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.place-results {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place-result {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.place-result:hover,
+.place-result[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.selected-place {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.selected-place.success {
+  color: var(--success);
+}
+
+.proposal-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.proposal-note {
+  min-height: 7rem;
+  padding: 0.85rem 1rem;
+  resize: vertical;
+}
+
+.duration-input {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.duration-input input {
+  width: 8rem;
+}
+
+.duration-input span,
+.form-hint {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
 .trip-card:hover {
   transform: translateY(-2px);
   border-color: rgba(59, 130, 246, 0.35);
