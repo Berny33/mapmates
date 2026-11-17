@@ -11,6 +11,8 @@ export type ProposalCategory =
 export type ProposalStatus =
   'open' | 'tied' | 'approved' | 'rejected' | 'rejected_conflict';
 
+export type ProposalVoteValue = 'for' | 'against';
+
 export interface Proposal {
   id: string;
   tripId: string;
@@ -26,6 +28,27 @@ export interface Proposal {
   votingDeadline: Date;
   status: ProposalStatus;
   createdAt: Date;
+}
+
+export interface ProposalWithVotes {
+  id: string;
+  placeName: string;
+  category: ProposalCategory;
+  day: string;
+  startTime: string;
+  endTime: string;
+  votingDeadline: Date;
+  status: ProposalStatus;
+  forVotes: number;
+  againstVotes: number;
+  userVote: ProposalVoteValue | null;
+}
+
+export interface ProposalVoteResult {
+  proposalId: string;
+  forVotes: number;
+  againstVotes: number;
+  userVote: ProposalVoteValue | null;
 }
 
 export interface NewProposal {

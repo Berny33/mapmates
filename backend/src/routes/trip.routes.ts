@@ -17,6 +17,8 @@ import { invitationParamsSchema } from '../validators/invitation.validators.js';
 import {
   createProposalSchema,
   proposalParamsSchema,
+  proposalVoteParamsSchema,
+  proposalVoteSchema,
 } from '../validators/proposal.validators.js';
 import { createTripSchema } from '../validators/trip.validators.js';
 
@@ -43,11 +45,24 @@ router.get(
   proposalController.listApproved,
 );
 
+router.get(
+  '/:tripId/proposals',
+  validate(proposalParamsSchema, 'params'),
+  proposalController.listOpen,
+);
+
 router.post(
   '/:tripId/proposals',
   validate(proposalParamsSchema, 'params'),
   validate(createProposalSchema),
   proposalController.create,
+);
+
+router.post(
+  '/:tripId/proposals/:proposalId/vote',
+  validate(proposalVoteParamsSchema, 'params'),
+  validate(proposalVoteSchema),
+  proposalController.vote,
 );
 
 router

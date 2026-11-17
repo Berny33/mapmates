@@ -3,10 +3,16 @@ import { pool } from '../config/db.js';
 import type {
   NewProposal,
   Proposal,
+  ProposalVoteResult,
+  ProposalVoteValue,
   ProposalStatus,
+  ProposalWithVotes,
 } from '../models/proposal.model.js';
 import { AppError } from '../utils/AppError.js';
-import type { CreateProposalInput } from '../validators/proposal.validators.js';
+import type {
+  CreateProposalInput,
+  ProposalVoteInput,
+} from '../validators/proposal.validators.js';
 
 interface ProposalTripRow {
   id: string;
@@ -25,6 +31,16 @@ interface TripRoleRow {
 
 interface OverlapRow {
   overlaps: boolean;
+}
+
+interface ProposalVotingRow {
+  status: ProposalStatus;
+  votingOpen: boolean;
+}
+
+interface VoteCountsRow {
+  forVotes: number;
+  againstVotes: number;
 }
 
 const PROPOSAL_COLUMNS = `id,
@@ -180,6 +196,119 @@ export const proposalModel = {
 
     return rows;
   },
+
+  async listOpenWithVotes(
+    client: PoolClient,
+    tripId: string,
+    userId: string,
+  ): Promise<ProposalWithVotes[]> {
+    const { rows } = await client.query<ProposalWithVotes>(
+      `SELECT id,
+              place_name AS "placeName",
+              category,
+              day::text AS day,
+              to_char(start_time, 'HH24:MI') AS "startTime",
+              to_char(end_time, 'HH24:MI') AS "endTime",
+              voting_deadline AS "votingDeadline",
+              status,
+              (SELECT count(*)::int
+                 FROM proposal_votes
+                WHERE proposal_id = proposals.id
+                  AND value = 'for') AS "forVotes",
+              (SELECT count(*)::int
+                 FROM proposal_votes
+                WHERE proposal_id = proposals.id
+                  AND value = 'against') AS "againstVotes",
+              (SELECT value
+                 FROM proposal_votes
+                WHERE proposal_id = proposals.id
+                  AND user_id = $2) AS "userVote"
+         FROM proposals
+        WHERE trip_id = $1
+          AND status = 'open'
+        ORDER BY created_at DESC, id`,
+      [tripId, userId],
+    );
+
+    return rows;
+  },
+
+  async findForVoting(
+    client: PoolClient,
+    tripId: string,
+    proposalId: string,
+  ): Promise<ProposalVotingRow | undefined> {
+    const { rows } = await client.query<ProposalVotingRow>(
+      `SELECT status,
+              voting_deadline > now() AS "votingOpen"
+         FROM proposals
+        WHERE trip_id = $1
+          AND id = $2
+        FOR UPDATE`,
+      [tripId, proposalId],
+    );
+
+    return rows[0];
+  },
+
+  async findVote(
+    client: PoolClient,
+    proposalId: string,
+    userId: string,
+  ): Promise<ProposalVoteValue | undefined> {
+    const { rows } = await client.query<{ value: ProposalVoteValue }>(
+      `SELECT value
+         FROM proposal_votes
+        WHERE proposal_id = $1
+          AND user_id = $2`,
+      [proposalId, userId],
+    );
+
+    return rows[0]?.value;
+  },
+
+  async upsertVote(
+    client: PoolClient,
+    proposalId: string,
+    userId: string,
+    value: ProposalVoteValue,
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO proposal_votes (proposal_id, user_id, value)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (proposal_id, user_id)
+       DO UPDATE SET value = EXCLUDED.value`,
+      [proposalId, userId, value],
+    );
+  },
+
+  async deleteVote(
+    client: PoolClient,
+    proposalId: string,
+    userId: string,
+  ): Promise<void> {
+    await client.query(
+      `DELETE FROM proposal_votes
+        WHERE proposal_id = $1
+          AND user_id = $2`,
+      [proposalId, userId],
+    );
+  },
+
+  async countVotes(
+    client: PoolClient,
+    proposalId: string,
+  ): Promise<VoteCountsRow> {
+    const { rows } = await client.query<VoteCountsRow>(
+      `SELECT count(*) FILTER (WHERE value = 'for')::int AS "forVotes",
+              count(*) FILTER (WHERE value = 'against')::int AS "againstVotes"
+         FROM proposal_votes
+        WHERE proposal_id = $1`,
+      [proposalId],
+    );
+
+    return rows[0];
+  },
 };
 
 interface ProposalServiceDependencies {
@@ -190,6 +319,31 @@ export function createProposalService({
   proposalModel,
 }: ProposalServiceDependencies) {
   return {
+    async listOpen(
+      userId: string,
+      tripId: string,
+    ): Promise<ProposalWithVotes[]> {
+      const client = await pool.connect();
+
+      try {
+        const trip = await proposalModel.findTripRole(client, tripId, userId);
+        if (!trip) {
+          throw new AppError(404, 'NOT_FOUND', 'Trip not found');
+        }
+        if (!trip.role) {
+          throw new AppError(
+            403,
+            'FORBIDDEN',
+            'You must be a trip member to view its proposals',
+          );
+        }
+
+        return proposalModel.listOpenWithVotes(client, tripId, userId);
+      } finally {
+        client.release();
+      }
+    },
+
     async listApproved(userId: string, tripId: string): Promise<Proposal[]> {
       const client = await pool.connect();
 
@@ -276,6 +430,77 @@ export function createProposalService({
 
         await client.query('COMMIT');
         return proposal;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async vote(
+      userId: string,
+      tripId: string,
+      proposalId: string,
+      input: ProposalVoteInput,
+    ): Promise<ProposalVoteResult> {
+      const client = await pool.connect();
+
+      try {
+        await client.query('BEGIN');
+
+        const proposal = await proposalModel.findForVoting(
+          client,
+          tripId,
+          proposalId,
+        );
+        if (!proposal) {
+          throw new AppError(404, 'NOT_FOUND', 'Proposal not found');
+        }
+
+        const membership = await proposalModel.findMemberRole(
+          client,
+          tripId,
+          userId,
+        );
+        if (!membership.role) {
+          throw new AppError(
+            403,
+            'FORBIDDEN',
+            'You must be a trip member to vote on its proposals',
+          );
+        }
+
+        if (proposal.status !== 'open' || !proposal.votingOpen) {
+          throw new AppError(
+            409,
+            'VOTING_CLOSED',
+            'Voting is closed for this proposal',
+          );
+        }
+
+        const currentVote = await proposalModel.findVote(
+          client,
+          proposalId,
+          userId,
+        );
+        let userVote: ProposalVoteValue | null = input.value;
+        if (currentVote === input.value) {
+          await proposalModel.deleteVote(client, proposalId, userId);
+          userVote = null;
+        } else {
+          await proposalModel.upsertVote(
+            client,
+            proposalId,
+            userId,
+            userVote,
+          );
+        }
+
+        const counts = await proposalModel.countVotes(client, proposalId);
+        await client.query('COMMIT');
+
+        return { proposalId, ...counts, userVote };
       } catch (error) {
         await client.query('ROLLBACK');
         throw error;

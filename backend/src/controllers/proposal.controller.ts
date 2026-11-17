@@ -12,8 +12,26 @@ function getTripId(req: Request): string {
   return tripId;
 }
 
+function getProposalId(req: Request): string {
+  const proposalId = req.params.proposalId;
+  if (typeof proposalId !== 'string') {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Invalid proposal id');
+  }
+
+  return proposalId;
+}
+
 export function createProposalController(proposalService: ProposalService) {
   return {
+    async listOpen(req: Request, res: Response): Promise<void> {
+      const proposals = await proposalService.listOpen(
+        getAuthenticatedUserId(req),
+        getTripId(req),
+      );
+
+      res.status(200).json(proposals);
+    },
+
     async listApproved(req: Request, res: Response): Promise<void> {
       const proposals = await proposalService.listApproved(
         getAuthenticatedUserId(req),
@@ -31,6 +49,17 @@ export function createProposalController(proposalService: ProposalService) {
       );
 
       res.status(201).json(proposal);
+    },
+
+    async vote(req: Request, res: Response): Promise<void> {
+      const result = await proposalService.vote(
+        getAuthenticatedUserId(req),
+        getTripId(req),
+        getProposalId(req),
+        req.body,
+      );
+
+      res.status(200).json(result);
     },
   };
 }

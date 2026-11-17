@@ -17,6 +17,15 @@ export const proposalParamsSchema = z.object({
   tripId: z.uuid(),
 });
 
+export const proposalVoteParamsSchema = z.object({
+  tripId: z.uuid(),
+  proposalId: z.uuid(),
+});
+
+export const proposalVoteSchema = z.object({
+  value: z.enum(['for', 'against']),
+});
+
 export const placeSearchSchema = z.object({
   q: z.string().trim().min(2).max(100),
 });
@@ -39,3 +48,4 @@ export const createProposalSchema = z
   });
 
 export type CreateProposalInput = z.infer<typeof createProposalSchema>;
+export type ProposalVoteInput = z.infer<typeof proposalVoteSchema>;
