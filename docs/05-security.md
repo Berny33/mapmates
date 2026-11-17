@@ -28,7 +28,7 @@ Roles are per trip (BR-01): `organizer` and `member`. A user who is not in the t
 | Register, log in | Visitor | n/a |
 | Create trip, list my trips | Authenticated user | 401 |
 | Read trip, proposals, itinerary; export | Member of the trip | 401, 403, 404 if the trip does not exist |
-| Join a trip | Authenticated user with a valid link | 401, 404 |
+| Preview or join a trip | Authenticated user with a valid link | 401, 404 |
 | Leave a trip | Member who is not the organizer | 403 |
 | Create proposal, vote | Member | 403 |
 | Remove proposal | Author while it is `open`; organizer at any time | 403, 409 |
@@ -110,3 +110,4 @@ Output handling: user text (names, notes, place names) is inserted into pages wi
 | ST-20 | Any response of register, login or user endpoints | Contains no password or hash |
 | ST-21 | More login attempts than the limit allows | 429 |
 | ST-22 | Search of `.env` and secrets in the repository and its history | Nothing found |
+| ST-23 | Join with a malformed invitation token | 400; unauthenticated requests receive 401 first |

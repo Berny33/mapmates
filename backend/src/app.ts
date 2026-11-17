@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { sessionMiddleware } from './config/session.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
+import invitationRoutes from './routes/invitation.routes.js';
 import tripRoutes from './routes/trip.routes.js';
 
 const app = express();
@@ -39,6 +40,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/invitations', invitationRoutes);
 app.use('/api/trips', tripRoutes);
 app.use(notFound);
 app.use(errorHandler);

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MapMates — Join trip</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-grid" aria-hidden="true"></div>
+    <div class="ambient ambient-glow" aria-hidden="true"></div>
+
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="MapMates home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>MapMates</span>
+      </a>
+      <a class="button button-secondary" href="/trips.html">My trips</a>
+    </header>
+
+    <main class="content-shell join-page-shell">
+      <section class="join-form-card" aria-labelledby="joinHeading">
+        <p class="eyebrow">Invitation</p>
+        <h1 id="joinHeading">Join a trip</h1>
+        <p>Paste an invitation link to see the trip details before you join.</p>
+
+        <form id="joinTripForm" class="join-trip-form" novalidate>
+          <div class="field">
+            <label for="invitationLinkInput">Invitation link</label>
+            <div class="join-trip-input-row">
+              <input
+                class="input"
+                id="invitationLinkInput"
+                name="invitationLink"
+                type="url"
+                inputmode="url"
+                autocomplete="off"
+                placeholder="Paste your invitation link"
+                required
+              />
+              <button
+                class="button button-secondary"
+                id="pasteInvitationButton"
+                type="button"
+              >
+                Paste link
+              </button>
+            </div>
+          </div>
+          <button
+            class="button button-primary"
+            id="previewTripButton"
+            type="submit"
+          >
+            Preview trip
+          </button>
+        </form>
+        <p
+          class="message join-page-status"
+          id="joinPageStatus"
+          aria-live="polite"
+        ></p>
+      </section>
+    </main>
+
+    <dialog
+      class="join-dialog"
+      id="joinDialog"
+      aria-labelledby="previewHeading"
+    >
+      <div class="join-dialog-content">
+        <p class="eyebrow">Trip invitation</p>
+        <h2 id="previewHeading">Would you like to join?</h2>
+        <p class="message" id="joinDialogStatus" aria-live="polite">
+          Review the trip details before joining.
+        </p>
+        <dl class="join-trip-details">
+          <div>
+            <dt>Trip</dt>
+            <dd id="previewTripName"></dd>
+          </div>
+          <div>
+            <dt>Destination</dt>
+            <dd id="previewDestination"></dd>
+          </div>
+          <div>
+            <dt>Dates</dt>
+            <dd id="previewDates"></dd>
+          </div>
+          <div>
+            <dt>Type</dt>
+            <dd id="previewType"></dd>
+          </div>
+        </dl>
+        <div class="join-preview-actions">
+          <button
+            class="button button-primary"
+            id="confirmJoinButton"
+            type="button"
+          >
+            Join trip
+          </button>
+          <button
+            class="button button-secondary"
+            id="cancelJoinButton"
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <script type="module" src="./js/join.js"></script>
+  </body>
+</html>
