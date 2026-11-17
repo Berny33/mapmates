@@ -117,7 +117,7 @@ Only one unrevoked invitation is allowed per trip. Regenerating a link revokes t
 | --- | --- | --- |
 | id | uuid | PK |
 | trip_id | uuid | NOT NULL, FK to trips, ON DELETE CASCADE |
-| author_id | uuid | NOT NULL, FK to users |
+| author_id | uuid | NOT NULL, FK to users, ON DELETE CASCADE |
 | place_name | text | NOT NULL |
 | lat | numeric(9,6) | NOT NULL, CHECK between -90 and 90 |
 | lon | numeric(9,6) | NOT NULL, CHECK between -180 and 180 |
@@ -154,3 +154,7 @@ Rules are defined in `docs/01-requirements.md`; this table only shows how each o
 | BR-14 Note of at most 280 characters | `CHECK (char_length(note) <= 280)` on `proposals` |
 | BR-15 Voting between 1 hour and 3 days | Validated by the application at creation; `voting_deadline` stores the result |
 | BR-10, BR-11 No overlap between approved activities | Validated by the application (UC-08 step 5, UC-15 step 4) |
+
+Approved proposals are the trip itinerary. The application locks the trip row
+while checking approved activities and inserting a proposal, so concurrent
+creations cannot approve overlapping intervals.

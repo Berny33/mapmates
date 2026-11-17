@@ -30,7 +30,8 @@ Roles are per trip (BR-01): `organizer` and `member`. A user who is not in the t
 | Read trip, proposals, itinerary; export | Member of the trip | 401, 403, 404 if the trip does not exist |
 | Preview or join a trip | Authenticated user with a valid link | 401, 404 |
 | Leave a trip | Member who is not the organizer | 403 |
-| Create proposal, vote | Member | 403 |
+| Create proposal, vote | Member of the trip | 401, 403, 404 |
+| Search places | Authenticated user | 401 |
 | Remove proposal | Author while it is `open`; organizer at any time | 403, 409 |
 | Edit or delete trip | Organizer | 403 |
 | Manage invitation link | Organizer | 403 |
@@ -61,6 +62,10 @@ All fields are validated on the server and invalid input answers 400.
 | Voting duration | From 1 hour to 3 days (BR-15) |
 | Vote `value` | `for` or `against` |
 | Search term `q` | 2 to 100 characters |
+
+Place searches are sent only by the backend to Nominatim with the configured
+identifying `GEOCODING_USER_AGENT`. The adapter enforces a one-second interval
+between upstream requests and does not log the search term.
 
 Output handling: user text (names, notes, place names) is inserted into pages with `textContent`, never `innerHTML`, and is escaped in `.ics` files. `helmet` sets a Content Security Policy.
 
@@ -111,3 +116,5 @@ Output handling: user text (names, notes, place names) is inserted into pages wi
 | ST-21 | More login attempts than the limit allows | 429 |
 | ST-22 | Search of `.env` and secrets in the repository and its history | Nothing found |
 | ST-23 | Join with a malformed invitation token | 400; unauthenticated requests receive 401 first |
+| ST-24 | Search again before the Nominatim interval elapses or receive upstream 429 | 429 |
+| ST-25 | Nominatim is unavailable or returns an invalid response | 502 |
