@@ -6,6 +6,7 @@ import { sessionMiddleware } from './config/session.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
 import invitationRoutes from './routes/invitation.routes.js';
+import placeRoutes from './routes/place.routes.js';
 import tripRoutes from './routes/trip.routes.js';
 
 const app = express();
@@ -22,6 +23,7 @@ const pages: Record<string, string> = {
   '/register': 'register.html',
   '/trips': 'trips.html',
   '/create-trip': 'create-trip.html',
+  '/trip': 'trip.html',
 };
 
 app.get(Object.keys(pages), (req, res, next) => {
@@ -40,6 +42,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/places', placeRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/trips', tripRoutes);
 app.use(notFound);
