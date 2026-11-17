@@ -1,4 +1,10 @@
-import { ApiError, getCurrentUser, logout, redirectToLogin, requestJson } from './api.js';
+import {
+  ApiError,
+  getCurrentUser,
+  logout,
+  redirectToLogin,
+  requestJson,
+} from './api.js';
 
 const tripList = document.getElementById('tripList');
 const tripStatus = document.getElementById('tripStatus');
@@ -178,7 +184,10 @@ function createInvitationControls(tripId) {
         return;
       }
 
-      const message = error instanceof Error ? error.message : 'Unable to load invitation status.';
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to load invitation status.';
       showPanelStatus(message, 'error');
     }
   }
@@ -198,7 +207,9 @@ function createInvitationControls(tripId) {
     linkInput.value = '';
     linkLabel.hidden = true;
     linkRow.hidden = true;
-    showPanelStatus(active ? 'Regenerating invitation link…' : 'Generating invitation link…');
+    showPanelStatus(
+      active ? 'Regenerating invitation link…' : 'Generating invitation link…',
+    );
 
     try {
       const invitation = await requestJson(invitationUrl, { method: 'POST' });
@@ -221,7 +232,10 @@ function createInvitationControls(tripId) {
         return;
       }
 
-      const message = error instanceof Error ? error.message : 'Unable to generate invitation link.';
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to generate invitation link.';
       showPanelStatus(message, 'error');
     } finally {
       generateButton.disabled = false;
@@ -244,7 +258,10 @@ function createInvitationControls(tripId) {
         return;
       }
 
-      const message = error instanceof Error ? error.message : 'Unable to revoke invitation link.';
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to revoke invitation link.';
       showPanelStatus(message, 'error');
     } finally {
       revokeButton.disabled = false;
@@ -309,14 +326,17 @@ function showFieldErrors(form, details) {
   }
 
   details.forEach((detail) => {
-    if (typeof detail.field !== 'string' || typeof detail.message !== 'string') {
+    if (
+      typeof detail.field !== 'string' ||
+      typeof detail.message !== 'string'
+    ) {
       return;
     }
 
     const input = form.elements.namedItem(detail.field);
-    const errorNode = Array.from(form.querySelectorAll('[data-error-for]')).find(
-      (node) => node.dataset.errorFor === detail.field,
-    );
+    const errorNode = Array.from(
+      form.querySelectorAll('[data-error-for]'),
+    ).find((node) => node.dataset.errorFor === detail.field);
 
     if (input instanceof HTMLInputElement && errorNode) {
       input.setAttribute('aria-invalid', 'true');
@@ -330,7 +350,12 @@ async function loadTrips() {
     const trips = await requestJson('/trips');
     renderTrips(trips);
 
-    if (new URLSearchParams(window.location.search).get('created') === '1') {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('joined') === '1') {
+      showStatus('You joined the trip. It is now in your trips.', 'success');
+    } else if (query.get('alreadyMember') === '1') {
+      showStatus('You were already a member of this trip.', 'success');
+    } else if (query.get('created') === '1') {
       showStatus('Trip created successfully.', 'success');
     }
   } catch (error) {
@@ -339,7 +364,8 @@ async function loadTrips() {
       return;
     }
 
-    const message = error instanceof Error ? error.message : 'Unable to load trips.';
+    const message =
+      error instanceof Error ? error.message : 'Unable to load trips.';
     showStatus(message, 'error');
   }
 }
@@ -375,7 +401,8 @@ async function createTrip(event) {
       showFieldErrors(tripForm, error.details);
     }
 
-    const message = error instanceof Error ? error.message : 'Unable to create trip.';
+    const message =
+      error instanceof Error ? error.message : 'Unable to create trip.';
     showStatus(message, 'error');
   } finally {
     submitButton.disabled = false;
@@ -395,7 +422,8 @@ async function initialize() {
       return;
     }
 
-    const message = error instanceof Error ? error.message : 'Unable to verify your session.';
+    const message =
+      error instanceof Error ? error.message : 'Unable to verify your session.';
     showStatus(message, 'error');
     return;
   }
@@ -405,7 +433,8 @@ async function initialize() {
     try {
       await logout();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to log out.';
+      const message =
+        error instanceof Error ? error.message : 'Unable to log out.';
       showStatus(message, 'error');
     }
   });

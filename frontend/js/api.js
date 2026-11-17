@@ -69,12 +69,53 @@ export async function logout() {
 
 export function redirectToLogin(returnTo = window.location.pathname) {
   const allowedDestinations = ['/trips.html', '/create-trip.html'];
-  const safeReturnTo = allowedDestinations.includes(returnTo) ? returnTo : '/trips.html';
+  const safeReturnTo =
+    allowedDestinations.includes(returnTo) ? returnTo : getJoinDestination(returnTo) || '/trips.html';
   window.location.assign(`/login.html?returnTo=${encodeURIComponent(safeReturnTo)}`);
+}
+
+function getJoinDestination(candidate) {
+  if (typeof candidate !== 'string') {
+    return null;
+  }
+
+  try {
+    const url = new URL(candidate, window.location.origin);
+    const tokenValues = url.searchParams.getAll('token');
+    const onlyTokenParameter = Array.from(url.searchParams.keys()).every(
+      (key) => key === 'token',
+    );
+
+    const isSafeJoinPage =
+      url.origin === window.location.origin &&
+      url.pathname === '/join.html' &&
+      !url.hash &&
+      onlyTokenParameter;
+
+    if (!isSafeJoinPage) {
+      return null;
+    }
+
+    if (tokenValues.length === 0 && !url.search) {
+      return '/join.html';
+    }
+
+    if (tokenValues.length === 1 && tokenValues[0].length <= 256) {
+      return `/join.html?token=${encodeURIComponent(tokenValues[0])}`;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export function getReturnTo() {
   const requested = new URLSearchParams(window.location.search).get('returnTo');
   const allowedDestinations = ['/trips.html', '/create-trip.html'];
-  return allowedDestinations.includes(requested) ? requested : '/trips.html';
+  if (allowedDestinations.includes(requested)) {
+    return requested;
+  }
+
+  return getJoinDestination(requested) || '/trips.html';
 }
