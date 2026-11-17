@@ -112,6 +112,7 @@ Example, voting on a proposal (`PUT /api/trips/:tripId/proposals/:proposalId/vot
 | `GET /api/trips/:tripId` | UC-10, UC-11 (trip data) |
 | `PATCH /api/trips/:tripId` | UC-13 |
 | `DELETE /api/trips/:tripId` | UC-13 |
+| `GET /api/trips/:tripId/invitation` | UC-14 (invitation status) |
 | `POST /api/trips/:tripId/invitation` | UC-14 (generate or regenerate) |
 | `DELETE /api/trips/:tripId/invitation` | UC-14 (revoke) |
 | `POST /api/invitations/:token/join` | UC-06 |
