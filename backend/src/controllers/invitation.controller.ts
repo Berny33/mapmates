@@ -13,10 +13,26 @@ function getTripId(req: Request): string {
   return tripId;
 }
 
+function getToken(req: Request): string {
+  const token = req.params.token;
+
+  if (typeof token !== 'string') {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Invalid invitation token');
+  }
+
+  return token;
+}
+
 export function createInvitationController(
   invitationService: InvitationService,
 ) {
   return {
+    async preview(req: Request, res: Response): Promise<void> {
+      const trip = await invitationService.preview(getToken(req));
+
+      res.status(200).json(trip);
+    },
+
     async getStatus(req: Request, res: Response): Promise<void> {
       const status = await invitationService.getStatus(
         getAuthenticatedUserId(req),
@@ -42,6 +58,15 @@ export function createInvitationController(
       );
 
       res.status(204).end();
+    },
+
+    async join(req: Request, res: Response): Promise<void> {
+      const result = await invitationService.join(
+        getAuthenticatedUserId(req),
+        getToken(req),
+      );
+
+      res.status(200).json(result);
     },
   };
 }

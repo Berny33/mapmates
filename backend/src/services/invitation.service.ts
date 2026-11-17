@@ -18,6 +18,30 @@ interface InvitationStatusRow {
   expiresAt: Date;
 }
 
+interface InvitationTripRow {
+  tripId: string;
+}
+
+interface InvitationPreviewRow {
+  name: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  type: string;
+}
+
+interface JoinTripRow {
+  maxMembers: number;
+}
+
+interface MembershipRow {
+  role: string;
+}
+
+interface MemberCountRow {
+  count: number;
+}
+
 async function assertOrganizerOfCollaborativeTrip(
   client: PoolClient,
   userId: string,
@@ -78,6 +102,116 @@ function hashToken(token: string): string {
 }
 
 export const invitationModel = {
+  async findPreviewForActiveToken(
+    client: PoolClient,
+    tokenHash: string,
+  ): Promise<InvitationPreviewRow | undefined> {
+    const { rows } = await client.query<InvitationPreviewRow>(
+      `SELECT t.name,
+              t.destination,
+              t.start_date::text AS "startDate",
+              t.end_date::text AS "endDate",
+              t.type
+         FROM invitations i
+         JOIN trips t ON t.id = i.trip_id
+        WHERE i.token_hash = $1
+          AND i.revoked_at IS NULL
+          AND i.expires_at > now()`,
+      [tokenHash],
+    );
+
+    return rows[0];
+  },
+
+  async findTripIdForActiveToken(
+    client: PoolClient,
+    tokenHash: string,
+  ): Promise<InvitationTripRow | undefined> {
+    const { rows } = await client.query<InvitationTripRow>(
+      `SELECT trip_id AS "tripId"
+         FROM invitations
+        WHERE token_hash = $1
+          AND revoked_at IS NULL
+          AND expires_at > now()`,
+      [tokenHash],
+    );
+
+    return rows[0];
+  },
+
+  async lockTrip(
+    client: PoolClient,
+    tripId: string,
+  ): Promise<JoinTripRow | undefined> {
+    const { rows } = await client.query<JoinTripRow>(
+      `SELECT max_members AS "maxMembers"
+         FROM trips
+        WHERE id = $1
+        FOR UPDATE`,
+      [tripId],
+    );
+
+    return rows[0];
+  },
+
+  async confirmActiveTokenForTrip(
+    client: PoolClient,
+    tripId: string,
+    tokenHash: string,
+  ): Promise<boolean> {
+    const { rowCount } = await client.query(
+      `SELECT id
+         FROM invitations
+        WHERE trip_id = $1
+          AND token_hash = $2
+          AND revoked_at IS NULL
+          AND expires_at > now()
+        FOR UPDATE`,
+      [tripId, tokenHash],
+    );
+
+    return rowCount === 1;
+  },
+
+  async findMembership(
+    client: PoolClient,
+    tripId: string,
+    userId: string,
+  ): Promise<MembershipRow | undefined> {
+    const { rows } = await client.query<MembershipRow>(
+      `SELECT role
+         FROM trip_members
+        WHERE trip_id = $1
+          AND user_id = $2`,
+      [tripId, userId],
+    );
+
+    return rows[0];
+  },
+
+  async countMembers(client: PoolClient, tripId: string): Promise<number> {
+    const { rows } = await client.query<MemberCountRow>(
+      `SELECT count(*)::int AS count
+         FROM trip_members
+        WHERE trip_id = $1`,
+      [tripId],
+    );
+
+    return rows[0].count;
+  },
+
+  async addMember(
+    client: PoolClient,
+    tripId: string,
+    userId: string,
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO trip_members (trip_id, user_id, role)
+       VALUES ($1, $2, 'member')`,
+      [tripId, userId],
+    );
+  },
+
   async findActiveExpiry(
     client: PoolClient,
     tripId: string,
@@ -159,6 +293,82 @@ export function createInvitationService({
       await withOrganizerTrip(userId, tripId, (client) =>
         invitationModel.revokeUnrevoked(client, tripId),
       );
+    },
+
+    async preview(token: string): Promise<InvitationPreviewRow> {
+      const client = await pool.connect();
+
+      try {
+        const trip = await invitationModel.findPreviewForActiveToken(
+          client,
+          hashToken(token),
+        );
+        if (!trip) {
+          throw new AppError(404, 'NOT_FOUND', 'Invitation not found');
+        }
+
+        return trip;
+      } finally {
+        client.release();
+      }
+    },
+
+    async join(userId: string, token: string): Promise<{ joined: boolean }> {
+      const tokenHash = hashToken(token);
+      const client = await pool.connect();
+
+      try {
+        await client.query('BEGIN');
+
+        const invitation =
+          await invitationModel.findTripIdForActiveToken(client, tokenHash);
+        if (!invitation) {
+          throw new AppError(404, 'NOT_FOUND', 'Invitation not found');
+        }
+
+        const trip = await invitationModel.lockTrip(client, invitation.tripId);
+        if (!trip) {
+          throw new AppError(404, 'NOT_FOUND', 'Invitation not found');
+        }
+
+        const isStillActive =
+          await invitationModel.confirmActiveTokenForTrip(
+            client,
+            invitation.tripId,
+            tokenHash,
+          );
+        if (!isStillActive) {
+          throw new AppError(404, 'NOT_FOUND', 'Invitation not found');
+        }
+
+        const membership = await invitationModel.findMembership(
+          client,
+          invitation.tripId,
+          userId,
+        );
+        if (membership) {
+          await client.query('COMMIT');
+          return { joined: false };
+        }
+
+        const memberCount = await invitationModel.countMembers(
+          client,
+          invitation.tripId,
+        );
+        if (memberCount >= trip.maxMembers) {
+          throw new AppError(409, 'TRIP_FULL', 'Trip has reached its member limit');
+        }
+
+        await invitationModel.addMember(client, invitation.tripId, userId);
+        await client.query('COMMIT');
+
+        return { joined: true };
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     },
   };
 }
