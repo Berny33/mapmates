@@ -73,10 +73,10 @@ flowchart LR
 | Actor | User |
 | Preconditions | The trip is collaborative and has an active invitation link. |
 | Trigger | The user opens an invitation link. |
-| Main flow | 1. The system verifies the user is authenticated. 2. The system finds the invitation by its token. 3. The system verifies the link is not expired or revoked. 4. The system verifies the user is not already a member. 5. The system verifies the trip has not reached its maximum number of members. 6. The system adds the user to the trip with the role `member`. 7. The system redirects the user to the trip. |
-| Alternative flows | A1. The user is already a member (step 4): no change is made and the user is redirected to the trip. A2. The user is not authenticated (step 1): the system sends the user to log in or register and, afterwards, returns to the invitation link. |
+| Main flow | 1. The system verifies the user is authenticated. 2. The system finds the invitation by its token. 3. The system verifies the link is not expired or revoked and shows the trip name, destination, dates and type. 4. The user confirms they want to join. 5. The system verifies the user is not already a member. 6. The system verifies the trip has not reached its maximum number of members. 7. The system adds the user to the trip with the role `member`. 8. The system redirects the user to My Trips and confirms the result. |
+| Alternative flows | A1. The user is already a member (step 4): no change is made and the system redirects the user to My Trips with a confirmation. A2. The user is not authenticated (step 1): the system sends the user to log in or register and, afterwards, returns to the invitation link. |
 | Exceptions | E1. Token not found, expired or revoked: 404 (same response for all three, to avoid revealing information). E2. Trip is full: 409. E3. Malformed token: 400. |
-| Postconditions | The user is a member of the trip with the role `member`. The trip's member count increased by one. |
+| Postconditions | The user is a member of the trip with the role `member`. The member count increases by one only if the user was not already a member. |
 | Related | FR-07, FR-08, BR-07, BR-08 |
 
 ### UC-08: Create proposal

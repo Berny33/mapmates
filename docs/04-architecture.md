@@ -115,6 +115,7 @@ Example, voting on a proposal (`PUT /api/trips/:tripId/proposals/:proposalId/vot
 | `GET /api/trips/:tripId/invitation` | UC-14 (invitation status) |
 | `POST /api/trips/:tripId/invitation` | UC-14 (generate or regenerate) |
 | `DELETE /api/trips/:tripId/invitation` | UC-14 (revoke) |
+| `GET /api/invitations/:token` | UC-06 (invitation preview) |
 | `POST /api/invitations/:token/join` | UC-06 |
 | `DELETE /api/trips/:tripId/members/me` | UC-07 |
 | `GET /api/places/search?q=` | UC-08 (place search) |
