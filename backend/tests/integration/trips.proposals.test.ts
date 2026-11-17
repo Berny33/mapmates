@@ -271,7 +271,7 @@ describe('proposal voting (US-09)', () => {
     expect(rows[0].count).toBe(0);
   });
 
-  it('lists open proposals with vote counts and the current member vote', async () => {
+  it('lists proposals with vote counts and the current member vote', async () => {
     const organizer = await loginAs();
     const member = await loginAs(
       buildUser({ name: 'Luis', email: 'luis@example.com' }),
@@ -297,21 +297,116 @@ describe('proposal voting (US-09)', () => {
     const response = await organizer
       .get(proposalPath(trip.id))
       .expect(200);
-    expect(response.body).toEqual([
-      expect.objectContaining({
-        id: proposal.body.id,
-        placeName: 'Louvre Museum',
-        status: 'open',
-        forVotes: 1,
-        againstVotes: 0,
-        userVote: 'for',
-      }),
-    ]);
+    expect(response.body).toHaveLength(2);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: proposal.body.id,
+          placeName: 'Louvre Museum',
+          status: 'open',
+          forVotes: 1,
+          againstVotes: 0,
+          userVote: 'for',
+        }),
+        expect.objectContaining({
+          id: closedProposal.body.id,
+          status: 'rejected',
+          forVotes: 0,
+          againstVotes: 0,
+          userVote: null,
+        }),
+      ]),
+    );
 
     await request(app).get(proposalPath(trip.id)).expect(401);
     await member.get(proposalPath(trip.id)).expect(403);
     await organizer.get(proposalPath('not-a-uuid')).expect(400);
     await organizer.get(proposalPath(randomUUID())).expect(404);
+  });
+
+  it('closes overdue proposals on read and resolves votes and schedule conflicts [BR-03, BR-04, BR-11]', async () => {
+    const member = await loginAs();
+    const trip = await createTrip(member);
+    const createOpenProposal = async (
+      placeName: string,
+      overrides: Record<string, unknown> = {},
+    ) =>
+      member
+        .post(proposalPath(trip.id))
+        .send({ ...validProposal, placeName, ...overrides })
+        .expect(201);
+
+    const tiedProposal = await createOpenProposal('Tied proposal');
+    const approvedProposal = await createOpenProposal('Approved proposal', {
+      startTime: '13:00',
+      endTime: '14:00',
+    });
+    const rejectedProposal = await createOpenProposal('Rejected proposal', {
+      startTime: '15:00',
+      endTime: '16:00',
+    });
+    const existingApproved = await createOpenProposal('Existing activity');
+    const conflictProposal = await createOpenProposal('Conflicting winner');
+
+    await pool.query(
+      "UPDATE proposals SET status = 'approved' WHERE id = $1",
+      [existingApproved.body.id],
+    );
+    await member
+      .post(proposalVotePath(trip.id, approvedProposal.body.id))
+      .send({ value: 'for' })
+      .expect(200);
+    await member
+      .post(proposalVotePath(trip.id, rejectedProposal.body.id))
+      .send({ value: 'against' })
+      .expect(200);
+    await member
+      .post(proposalVotePath(trip.id, conflictProposal.body.id))
+      .send({ value: 'for' })
+      .expect(200);
+
+    await pool.query(
+      `UPDATE proposals
+          SET voting_deadline = now() - interval '1 minute'
+        WHERE id = ANY($1::uuid[])`,
+      [[
+        tiedProposal.body.id,
+        approvedProposal.body.id,
+        rejectedProposal.body.id,
+        conflictProposal.body.id,
+      ]],
+    );
+
+    const response = await member.get(proposalPath(trip.id)).expect(200);
+    const proposalsById = new Map<string, string>();
+    for (const proposal of response.body as Array<{
+      id: string;
+      status: string;
+    }>) {
+      proposalsById.set(proposal.id, proposal.status);
+    }
+
+    expect(proposalsById.get(tiedProposal.body.id)).toBe('tied');
+    expect(proposalsById.get(approvedProposal.body.id)).toBe('approved');
+    expect(proposalsById.get(rejectedProposal.body.id)).toBe('rejected');
+    expect(proposalsById.get(conflictProposal.body.id)).toBe(
+      'rejected_conflict',
+    );
+    expect(
+      response.body.find(
+        (proposal: { id: string }) => proposal.id === tiedProposal.body.id,
+      ).votingDeadline,
+    ).toEqual(expect.any(String));
+
+    const itinerary = await member
+      .get(`/api/trips/${trip.id}/itinerary`)
+      .expect(200);
+    expect(itinerary.body).toContainEqual(
+      expect.objectContaining({ id: approvedProposal.body.id }),
+    );
+    expect(itinerary.body).not.toContainEqual(
+      expect.objectContaining({ id: conflictProposal.body.id }),
+    );
   });
 
   it('validates vote values and checks membership and proposal existence [ST-03, ST-04, ST-09]', async () => {
