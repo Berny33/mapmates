@@ -48,7 +48,7 @@ router.get(
 router.get(
   '/:tripId/proposals',
   validate(proposalParamsSchema, 'params'),
-  proposalController.listOpen,
+  proposalController.listAll,
 );
 
 router.post(

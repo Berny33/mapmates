@@ -23,8 +23,8 @@ function getProposalId(req: Request): string {
 
 export function createProposalController(proposalService: ProposalService) {
   return {
-    async listOpen(req: Request, res: Response): Promise<void> {
-      const proposals = await proposalService.listOpen(
+    async listAll(req: Request, res: Response): Promise<void> {
+      const proposals = await proposalService.listAll(
         getAuthenticatedUserId(req),
         getTripId(req),
       );
